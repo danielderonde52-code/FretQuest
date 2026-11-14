@@ -1,0 +1,876 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FretQuest</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#121a18"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Marcellus+SC&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: one dark neck is the stage in every view; hairline gold rules instead of boxes; the learning path is a numbered ladder. Colour means scale degree, everywhere. One deliberate dark look. */
+:root{
+  --bg:#121a18; --surface:#18221f; --raise:#1f2b27; --fg:#ece6d6; --muted:#9aa093; --line:#3d4a40;
+  --accent:#c2a15a; --accent-fg:#14100b;
+  /* notenkleuren "edelmetaal": goud = grondtoon, koper = terts, zilver = kwint, patina = septiem, open ring = overige */
+  --c1:#e0b84f; --c3:#c77b4a; --c5:#cfd2d6; --c7:#6fa08c; --ct:#e4dcc8; --ch:#ef6f52;
+  --ok:#7ccf98; --bad:#ea6f62;
+  --wood:#1d130d; --fret:#a48a52; --string:#d2c8ae; --inlay:#3b2c20; --dot-ink:#14100b; --ghost:#6b6558;
+  --f-d:"Marcellus",Georgia,"Times New Roman",serif;
+  --f-sc:"Marcellus SC","Marcellus",Georgia,serif;
+  --f-b:"Spectral",Georgia,"Times New Roman",serif;
+  --f-m:"Spectral",Georgia,serif;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-b);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+.app{max-width:1100px;margin:0 auto;display:grid;gap:14px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-d);margin:0;text-wrap:balance;line-height:1.15}
+p{margin:0}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
+.brand{font-family:var(--f-d);font-weight:700;font-size:1.55rem;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:baseline;gap:10px}
+.brand i{font-style:normal;color:var(--accent)}
+.brand small{font-family:var(--f-b);font-weight:400;font-size:.8rem;letter-spacing:0;text-transform:none;color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);max-width:100%;overflow-x:auto}
+@media (max-width:480px){.tabs button{padding:8px 9px;font-size:.86rem;letter-spacing:.02em}}
+.tabs button{border:0;background:none;padding:8px 14px;font-family:var(--f-d);font-weight:600;font-size:.98rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+section{display:grid;gap:14px;min-width:0}
+
+.lbl{font-family:var(--f-d);font-weight:600;font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)} .small{font-size:.87rem}
+.chip{border:1px solid var(--line);background:var(--surface);padding:6px 11px;border-radius:6px;font-size:.88rem;min-height:34px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+.chip.k{font-family:var(--f-m);min-width:40px;padding-inline:6px}
+select.chip{appearance:auto;max-width:100%}
+.btn{border:0;background:var(--accent);color:var(--accent-fg);font-family:var(--f-d);font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:10px 18px;border-radius:6px;min-height:42px}
+.btn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
+.btn.on{background:var(--ok);color:#08170e}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tog{display:inline-flex;align-items:center;gap:7px;font-size:.9rem;min-height:34px}
+.tog input{width:17px;height:17px;accent-color:var(--accent)}
+
+/* neck */
+.app>*,section>*{min-width:0}
+.neck{overflow-x:auto;min-width:0;max-width:100%;-webkit-overflow-scrolling:touch;border-radius:8px}
+.neck svg{display:block;width:100%;min-width:620px;max-height:58vh;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.wood{fill:var(--wood)} .inlay{fill:var(--inlay)}
+.win{fill:var(--accent);fill-opacity:.13;stroke:var(--accent);stroke-opacity:.55;stroke-width:1.5}
+.wire{stroke:var(--fret);stroke-width:2.4} .nut{stroke:var(--string);stroke-width:7}
+.str{stroke:var(--string);stroke-opacity:.8}
+.fnum{fill:var(--muted);font:500 12px var(--f-m);text-anchor:middle} .fnum.k{fill:var(--fg);font-weight:700}
+.sn{fill:var(--muted);font:500 12px var(--f-m);text-anchor:middle;dominant-baseline:central}
+.d{stroke:rgba(0,0,0,.5);stroke-width:1}
+.d-root{fill:var(--c1)} .d-third{fill:var(--c3)} .d-fifth{fill:var(--c5)} .d-sev{fill:var(--c7)} .d-tone{fill:var(--ct)}
+.d-ghost{fill:var(--wood);stroke:var(--ghost);stroke-width:1.5} .d-ok{fill:var(--ok)} .d-miss{fill:var(--wood);stroke:var(--bad);stroke-width:2.4;stroke-dasharray:4 3}
+.dl{fill:var(--dot-ink);font:700 12.5px var(--f-d);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.dl.g{fill:var(--ghost)} .dl.m{fill:var(--ct)}
+.ring-cur{fill:none;stroke:#fff;stroke-width:3}
+.ring-ch{fill:none;stroke:var(--ch);stroke-width:2.5;stroke-dasharray:3.5 2.5}
+.ring-live{fill:none;stroke:var(--ok);stroke-width:4}
+@media (prefers-reduced-motion:no-preference){.ring-cur{animation:pulse 1.3s ease-in-out infinite}}
+@keyframes pulse{50%{stroke-opacity:.3}}
+.xm{stroke:var(--bad);stroke-width:4;stroke-linecap:round}
+.tap{fill:transparent;cursor:pointer}
+.wl{fill:var(--accent);font:700 13px var(--f-d);text-anchor:middle;letter-spacing:.04em}
+.lk{stroke:var(--accent);stroke-width:3;stroke-linecap:round} .lkh{fill:var(--accent)}
+.lesT{font-size:clamp(1.6rem,4vw,2.2rem);letter-spacing:.02em}
+.les{display:grid;gap:8px;padding-top:14px;border-top:1px solid var(--line);min-width:0}
+.les h3{font-size:1.2rem;display:flex;gap:10px;align-items:baseline}
+.les h3 .no{font-family:var(--f-m);color:var(--accent);font-size:1rem}
+.les p{max-width:65ch}
+.lesb{margin:0;display:grid;gap:4px;min-width:0}
+.lesb figcaption{font-family:var(--f-m);font-size:.82rem;color:var(--accent)}
+.lesb svg{margin:0;max-height:none}
+.lesd{display:grid;border-top:1px solid var(--line)}
+.lesrow{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.lesrow>div{min-width:0} .lesrow p{max-width:60ch}
+.how{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;max-width:75ch}
+details.how summary{cursor:pointer;font-family:var(--f-d);font-weight:600;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.82rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
+.sw.r{border:2px dashed var(--ch);background:none}
+
+.ctx{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 22px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.ctx>div{display:grid;gap:6px;align-content:start;min-width:0}
+.ctx .wide{grid-column:1/-1}
+.info{display:grid;gap:4px;min-height:3em}
+.info .f{font-family:var(--f-m);font-size:.95rem}
+.info b{font-family:var(--f-d);font-size:1.15rem;letter-spacing:.02em}
+
+/* path */
+.today{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.tcard{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:3px;align-content:start}
+.tcard:hover{border-color:var(--accent)}
+.tcard b{font-family:var(--f-d);font-size:1.05rem}
+.stages{display:grid;gap:0;border-top:1px solid var(--line)}
+.stage{border-bottom:1px solid var(--line)}
+.stage summary{list-style:none;display:grid;grid-template-columns:2.4rem minmax(0,1fr) 92px;gap:10px;align-items:center;padding:11px 2px;cursor:pointer}
+.stage summary::-webkit-details-marker{display:none}
+.stage .no{font-family:var(--f-m);font-weight:700;color:var(--accent);font-size:1.05rem}
+.stage h3{font-size:1.12rem;letter-spacing:.02em}
+.stage h3 small{display:block;font-family:var(--f-b);font-weight:400;font-size:.85rem;color:var(--muted);letter-spacing:0}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent)}
+.bar.done span{background:var(--ok)}
+.sbody{display:grid;gap:10px;padding:0 2px 16px 2.4rem;padding-left:calc(2.4rem + 12px)}
+.sbody p{max-width:65ch}
+.plist{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{display:inline-flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;font-size:.86rem;min-height:36px}
+.pchip:hover{border-color:var(--accent)}
+.pchip .m{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--muted);flex:none}
+.pchip .m.h{background:linear-gradient(90deg,var(--accent) 50%,transparent 50%);border-color:var(--accent)}
+.pchip .m.f{background:var(--ok);border-color:var(--ok)}
+.pchip .tag{font-family:var(--f-m);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--c5)}
+@media (max-width:520px){.sbody{padding-left:2px}}
+
+/* practice */
+.exlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.excard{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;display:grid;gap:1px;align-content:start}
+.excard b{font-family:var(--f-d);font-size:1rem}
+.excard span{font-size:.82rem;color:var(--muted)}
+.excard .tag{font-family:var(--f-m);font-size:.66rem;text-transform:uppercase;letter-spacing:.07em;color:var(--c5)}
+.excard[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.runbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+.pips{display:flex;gap:3px;align-items:center}
+.pip{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.pip.ok{background:var(--ok)} .pip.no{background:var(--bad)} .pip.now{background:var(--fg)}
+.prompt{font-family:var(--f-d);font-weight:600;font-size:clamp(1.1rem,2.6vw,1.45rem);min-height:1.3em}
+.prompt em{font-style:normal;color:var(--accent)}
+.choices{display:flex;flex-wrap:wrap;gap:6px}
+.choice{min-width:50px;padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);font:700 1.02rem var(--f-d);min-height:42px}
+.choice.ok{background:var(--ok);color:#08170e;border-color:var(--ok)} .choice.no{background:var(--bad);color:#fff;border-color:var(--bad)}
+.fb{font-weight:700;min-height:1.5em} .fb.ok{color:var(--ok)} .fb.no{color:var(--bad)}
+.mic{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:.86rem;color:var(--muted)}
+.meter{width:90px;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:var(--ok)}
+.micnote{font-family:var(--f-m);font-weight:700;color:var(--fg);min-width:3em}
+.live{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:baseline}
+.live .big{font-family:var(--f-d);font-weight:700;font-size:3rem;line-height:1;min-width:2.2ch}
+.live .big.out{color:var(--bad)}
+.done{display:grid;gap:10px;justify-items:start;padding-block:10px}
+.done .big{font-family:var(--f-d);font-weight:700;font-size:3rem;line-height:1}
+
+.tw{overflow-x:auto}
+table{border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums;min-width:460px;width:100%}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+th{font-family:var(--f-d);font-weight:600;color:var(--muted);font-size:.76rem;letter-spacing:.08em;text-transform:uppercase}
+td.n{text-align:right;font-family:var(--f-m)}
+
+@media (orientation:landscape) and (max-height:540px){
+  body{padding-block:6px 20px} .app{gap:8px} .brand{font-size:1.15rem} .brand small{display:none}
+  .tabs button{padding:5px 11px;font-size:.88rem}
+  .neck svg{max-height:60vh;min-width:0}
+  section{gap:8px}
+}
+/* Telefoon liggend, tijdens een ronde: opdracht boven, hals over de volle breedte, bediening in één strook onder. Geen scrollen. */
+html.pl body.running{overflow:hidden}
+html.pl body.running .top{display:none}
+html.pl body.running #prRun{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid!important;gap:4px 10px;
+  grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"prompt mid pips" "board board board" "ctl ctl btns";
+  padding:calc(5px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) calc(5px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
+html.pl body.running .runbar{display:contents}
+html.pl body.running #prMeta,html.pl body.running #runHow,html.pl body.running #micMsg:not(.err),html.pl body.running .mic .tog{display:none}
+html.pl body.running #prPips{grid-area:pips;align-self:center}
+html.pl body.running #prPrompt{grid-area:prompt;font-size:1rem;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:center}
+html.pl body.running #prFb,html.pl body.running #prLive{grid-area:mid;align-self:center;min-height:0;font-size:.9rem;white-space:nowrap}
+html.pl body.running #prFb:empty,html.pl body.running #prChoices:empty{display:none}
+html.pl body.running #prLive{gap:4px 14px;align-items:center}
+html.pl body.running #prLive>div{display:flex;gap:6px;align-items:baseline}
+html.pl body.running #prLive .big{font-size:1.5rem;min-width:1.6ch}
+html.pl body.running #lvStat{display:none}
+html.pl body.running #prBoard{grid-area:board;min-height:0;overflow:hidden;border-radius:6px}
+html.pl body.running #prBoard svg{width:100%;height:100%;min-width:0;max-height:none}
+html.pl body.running #prChoices,html.pl body.running #prMic{grid-area:ctl;align-self:center;gap:5px}
+html.pl body.running #prBtns{grid-area:btns;align-self:center;flex-wrap:nowrap;gap:5px}
+html.pl body.running .choice{min-width:42px;min-height:38px;padding:5px 9px;font-size:.95rem}
+html.pl body.running .btn{min-height:38px;padding:5px 12px;font-size:.82rem}
+html.pl body.running .meter{width:60px}
+
+/* ---- stijl: Atelier met de letters van Nachtblauw ---- */
+body{font-size:16px}
+h1,h2,h3,.brand,.tabs button,.lbl,.btn,.stage h3,.stage .no,.tcard b,.excard b,.prompt,.info b,.les h3,.lesT,.done .big,.live .big,.wl{font-weight:400}
+.brand{font-family:var(--f-sc);text-transform:none;letter-spacing:.1em;font-size:1.7rem}
+.brand small{font-style:italic;font-size:.92rem}
+.tabs button,.lbl,.btn{font-family:var(--f-sc);text-transform:none;letter-spacing:.08em}
+.tabs button{font-size:1.05rem} .lbl{font-size:.92rem} .btn{font-size:1.02rem}
+.chip,.btn,.choice,.ctx,.tcard,.excard,.pchip,.how,.neck{border-radius:3px}
+.chip.k,.fnum,.sn,.dl,.choice{font-family:var(--f-b)}
+.choice{font-weight:600}
+.dl{font:600 13.5px var(--f-b)} .fnum,.sn{font:500 12.5px var(--f-b)}
+.d-tone{fill:var(--wood);stroke:var(--ct);stroke-width:2}
+.d-ok{fill:var(--fg)}
+.sw.o{background:none;border:2px solid var(--ct)}
+.stage .no{font-family:var(--f-d);font-size:1.5rem;text-align:center}
+.stage h3{font-size:1.2rem} .stage h3 small{font-style:italic;font-size:.95rem}
+.excard .tag,.pchip .tag{font-family:var(--f-sc);font-size:.8rem;letter-spacing:.06em;text-transform:none;color:var(--c5)}
+.info .f,.lesb figcaption,.micnote{font-family:var(--f-b)}
+.btn.on{color:#0c1a11}
+html.pl body.running .btn{font-size:.92rem}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span>Fret<i>Quest</i></span><small>één hals, vijf lenzen</small></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="t-pad" aria-selected="true">Leerpad</button>
+      <button role="tab" id="t-hals" aria-selected="false">Hals</button>
+      <button role="tab" id="t-oef" aria-selected="false">Oefenen</button>
+      <button role="tab" id="t-stat" aria-selected="false">Voortgang</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="v-pad">
+      <div><span class="lbl">Vandaag</span></div>
+      <div class="today" id="today"></div>
+      <div><span class="lbl">Het pad</span><p class="muted small">Elke stap bouwt op de vorige: dezelfde hals, steeds een laag erbij. Lees eerst de uitleg, oefen daarna. Een stap is af bij 85%.</p></div>
+      <div class="stages" id="stages"></div>
+    </section>
+
+    <section id="v-les" hidden><div id="lesBody" style="display:grid;gap:14px"></div></section>
+
+    <section id="v-hals" hidden>
+      <div class="neck" id="exBoard"></div>
+      <div class="legend" id="legend"></div>
+      <div class="info" id="exInfo"></div>
+      <div class="ctx" id="exCtx"></div>
+      <div class="row">
+        <span class="lbl">Opbouw</span><span class="row" id="exLayer"></span>
+        <span class="lbl" style="margin-left:8px">Labels</span><span class="row" id="exLab"></span>
+      </div>
+      <div class="row"><button class="btn" id="exGo">Oefen dit</button><label class="tog"><input type="checkbox" id="exSound" checked> Geluid bij tikken</label></div>
+    </section>
+
+    <section id="v-oef" hidden>
+      <div id="prSetup" style="display:grid;gap:12px">
+        <div><span class="lbl">Oefening</span></div>
+        <div class="exlist" id="prEx"></div>
+        <div class="how" id="prHow"></div>
+        <div class="ctx" id="prCtx"></div>
+        <div class="row">
+          <label class="tog"><input type="checkbox" id="prRk"> Willekeurige toonsoort</label>
+          <label class="tog"><input type="checkbox" id="prRp"> Willekeurige positie</label>
+          <label class="tog"><input type="checkbox" id="prHint"> Grondtonen tonen</label>
+          <label class="tog"><input type="checkbox" id="prAuto"> Automatisch door bij goed</label>
+        </div>
+        <div class="row"><button class="btn" id="prStart">Start</button><span class="muted small" id="prSum"></span></div>
+      </div>
+
+      <div id="prRun" hidden style="display:grid;gap:8px">
+        <div class="runbar"><span id="prMeta"></span><span class="pips" id="prPips"></span></div>
+        <p class="prompt" id="prPrompt"></p>
+        <div class="neck" id="prBoard"></div>
+        <details class="how" id="runHow"><summary>Denkstap</summary><p class="small" id="runHowT"></p></details>
+        <div class="live" id="prLive" hidden>
+          <div><span class="lbl">Je speelt</span><div class="big" id="lvDeg">–</div></div>
+          <div><span class="lbl">Land op</span><div class="big" id="lvTarget" style="color:var(--accent)">–</div></div>
+          <div class="muted small" id="lvStat"></div>
+        </div>
+        <div class="choices" id="prChoices"></div>
+        <p class="fb" id="prFb"></p>
+        <div class="mic" id="prMic" hidden>
+          <button class="btn ghost" id="micBtn">Microfoon aan</button>
+          <button class="btn ghost" id="droneBtn" hidden>Drone aan</button>
+          <span class="meter"><span id="micLvl"></span></span><span class="micnote" id="micNote">–</span>
+          <label class="tog">Gevoeligheid <input type="range" id="micGate" min="0" max="100" value="40"></label>
+          <span id="micMsg"></span>
+        </div>
+        <div class="row" id="prBtns"><button class="btn" id="prNext" hidden>Volgende</button><button class="btn ghost" id="prShow" hidden>Toon antwoord</button><button class="btn ghost" id="prStop">Stoppen</button></div>
+      </div>
+
+      <div id="prDone" class="done" hidden>
+        <div class="big" id="dScore"></div>
+        <p id="dText" class="muted"></p>
+        <div class="row"><button class="btn" id="dAgain">Nog een ronde</button><button class="btn ghost" id="dSetup">Andere oefening</button><button class="btn ghost" id="dPad">Naar het leerpad</button></div>
+      </div>
+    </section>
+
+    <section id="v-stat" hidden>
+      <p class="muted small" style="max-width:65ch">Score = aandeel goed over je laatste 20 antwoorden, pas volledig geteld vanaf 10 antwoorden. De tijd is het gemiddelde per antwoord of per noot.</p>
+      <div class="tw" id="statTable"></div>
+      <div class="row"><button class="btn ghost" id="statReset">Voortgang wissen</button><span id="statConfirm" class="row"></span></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const mod=(n,m=12)=>((n%m)+m)%m, rnd=n=>Math.floor(Math.random()*n), pick=a=>a[rnd(a.length)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= theorie ================= */
+const NOTE=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+const OPEN=[40,45,50,55,59,64];            // snaar 0 = lage E
+const SNAME=['E','A','D','G','B','e'];
+const MAXF=15;
+const DEGN=['1','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7'];
+const GROUPS={int:'Intervallen',tri:'Drieklanken',arp:'Arpeggio’s',pent:'Pentatonisch',mode:'Ladders en modi',metal:'Metal-kleuren'};
+/* par = afstand van de grondtoon naar de grondtoon van de verwante majeurladder; die bepaalt waar de vijf posities liggen */
+const F={
+  pow:{g:'int',n:'Powerchord (1–5)',iv:[0,7],par:0},
+  chr:{g:'int',n:'Alle 12 intervallen',iv:[0,1,2,3,4,5,6,7,8,9,10,11],par:0},
+  maj:{g:'tri',n:'Majeur drieklank',iv:[0,4,7],par:0},
+  min:{g:'tri',n:'Mineur drieklank',iv:[0,3,7],par:3},
+  dim:{g:'tri',n:'Verminderde drieklank',iv:[0,3,6],par:1},
+  aug:{g:'tri',n:'Overmatige drieklank',iv:[0,4,8],par:0,lab:{8:'♯5'}},
+  maj7:{g:'arp',n:'Maj7-arpeggio',iv:[0,4,7,11],par:0},
+  dom7:{g:'arp',n:'Dominant-7-arpeggio',iv:[0,4,7,10],par:5},
+  m7:{g:'arp',n:'Mineur-7-arpeggio',iv:[0,3,7,10],par:3},
+  m7b5:{g:'arp',n:'m7♭5-arpeggio',iv:[0,3,6,10],par:1},
+  pmin:{g:'pent',n:'Mineur pentatonisch',iv:[0,3,5,7,10],par:3},
+  pmaj:{g:'pent',n:'Majeur pentatonisch',iv:[0,2,4,7,9],par:0},
+  blues:{g:'pent',n:'Bluesladder',iv:[0,3,5,6,7,10],par:3,ch:[6],tip:'Mineur pentatonisch met de ♭5 als doorgangsnoot.'},
+  ion:{g:'mode',n:'Majeur (Ionisch)',iv:[0,2,4,5,7,9,11],par:0,ch:[5,11],tip:'Majeur pentatonisch plus 4 en 7.'},
+  dor:{g:'mode',n:'Dorisch',iv:[0,2,3,5,7,9,10],par:10,ch:[9],tip:'Mineur met een grote 6. Mineur pentatonisch plus 2 en 6.'},
+  phr:{g:'mode',n:'Phrygisch',iv:[0,1,3,5,7,8,10],par:8,ch:[1],tip:'Mineur met een ♭2, een halve toon boven de grondtoon. Donker en dreigend.'},
+  lyd:{g:'mode',n:'Lydisch',iv:[0,2,4,6,7,9,11],par:7,ch:[6],lab:{6:'♯4'},tip:'Majeur met een ♯4. Majeur pentatonisch plus ♯4 en 7.'},
+  mix:{g:'mode',n:'Mixolydisch',iv:[0,2,4,5,7,9,10],par:5,ch:[10],tip:'Majeur met een ♭7. De klank van bluesrock en hardrock-riffs.'},
+  aeo:{g:'mode',n:'Mineur (Aeolisch)',iv:[0,2,3,5,7,8,10],par:3,ch:[8],tip:'Mineur pentatonisch plus 2 en ♭6.'},
+  loc:{g:'mode',n:'Locrisch',iv:[0,1,3,5,6,8,10],par:1,ch:[1,6],tip:'Mineur met ♭2 en ♭5. Instabiel, weinig als toonsoort gebruikt.'},
+  hmin:{g:'metal',n:'Harmonisch mineur',iv:[0,2,3,5,7,8,11],par:3,ch:[11],tip:'Mineur met een grote 7. Het gat van ♭6 naar 7 geeft de neoklassieke klank.'},
+  phd:{g:'metal',n:'Phrygisch dominant',iv:[0,1,4,5,7,8,10],par:8,ch:[1,4],tip:'Phrygisch met een grote terts. De vijfde modus van harmonisch mineur.'}
+};
+const deg=(fid,iv)=>(F[fid].lab&&F[fid].lab[iv])||DEGN[iv];
+function ivClass(fid,iv){const a=F[fid].iv;
+  if(iv===0)return'root'; if(iv===3||iv===4)return'third';
+  if(iv===7||((iv===6||iv===8)&&!a.includes(7)))return'fifth';
+  if(iv===10||iv===11)return'sev'; return'tone';}
+const isMinor=fid=>F[fid].iv.includes(3)&&!F[fid].iv.includes(4);
+const chordSet=fid=>F[fid].iv.filter(iv=>['root','third','fifth'].includes(ivClass(fid,iv)));
+const pentSet=fid=>{const p=isMinor(fid)?[0,3,5,7,10]:[0,2,4,7,9];return F[fid].iv.filter(iv=>p.includes(iv)||chordSet(fid).includes(iv));};
+const mk=(s,f,root)=>({s,f,iv:mod(OPEN[s]+f-root),midi:OPEN[s]+f});
+const key=n=>n.s+':'+n.f;
+
+/* De vijf posities: vensters van vijf frets, geplaatst op de verwante majeurladder. Binnen zo'n venster komt elke toonhoogte precies één keer voor. */
+function posLos(fid,root){const b=mod(root+F[fid].par-4);return[-3,-1,1,4,6].map(o=>mod(b+o)).sort((a,b)=>a-b);}
+function shapeName(notes,fid){
+  if(F[fid].iv.includes(6)&&!F[fid].iv.includes(7))return'';   // verminderde kwint: geen gangbare CAGED-naam
+  const r=new Set(notes.filter(n=>n.iv===0).map(n=>n.s)),h=s=>r.has(s);
+  const L=h(0)&&h(2)?'E':h(2)&&h(4)?'D':h(1)&&h(4)?'C':h(1)&&h(3)?'A':h(0)&&h(3)?'G':h(5)&&h(2)?'E':h(5)&&h(3)?'G':'';
+  return L?L+(isMinor(fid)?'m':'')+'-vorm':'';}
+function getLens(fid,root,lens){
+  const f=F[fid],set=new Set(f.iv);let notes=[],win=null,name='hele hals';
+  const add=(s,fr)=>{const n=mk(s,fr,root);if(set.has(n.iv))notes.push(n);};
+  if(lens.t==='pos'){const lo=posLos(fid,root)[lens.i||0];win={start:lo,end:lo+4};
+    for(let s=0;s<6;s++)for(let fr=lo;fr<=lo+4;fr++){if(s===3&&fr===lo+4)continue;add(s,fr);}
+    const sn=shapeName(notes,fid);name='positie '+((lens.i||0)+1)+(sn?' · '+sn:'');}
+  else if(lens.t==='nps'&&f.iv.length===7){const k=lens.i||0,pc=mod(root+f.iv[k]);const build=st=>{let m=st;const seq=[];while(seq.length<18){if(set.has(mod(m-root)))seq.push(m);m++;}return seq.map((p,j)=>mk(Math.floor(j/3),p-OPEN[Math.floor(j/3)],root));};
+    notes=build(40+mod(pc-4));if(notes.some(n=>n.f<0))notes=build(52+mod(pc-4));
+    const fs=notes.map(n=>n.f);win={start:Math.min(...fs),end:Math.max(...fs)};name='3 per snaar vanaf '+deg(fid,f.iv[k]);}
+  else if(lens.t==='set'){const a=lens.i||0;for(let s=a;s<a+3;s++)for(let fr=0;fr<=MAXF;fr++)add(s,fr);
+    /* drieklanken: alleen complete liggingen (één noot per snaar, drie verschillende trappen, binnen vier frets); losse noten aan de rand vervallen */
+    if(f.iv.length===3){const by=[0,1,2].map(k=>notes.filter(n=>n.s===a+k)),keep=new Set();
+      for(const x of by[0])for(const y of by[1])for(const z of by[2]){const fs=[x.f,y.f,z.f];
+        if(new Set([x.iv,y.iv,z.iv]).size===3&&Math.max(...fs)-Math.min(...fs)<=4)[x,y,z].forEach(n=>keep.add(key(n)));}
+      notes=notes.filter(n=>keep.has(key(n)));}name='snaren '+SNAME.slice(a,a+3).join('-');}
+  else if(lens.t==='str'){const s=lens.i||0;for(let fr=0;fr<=MAXF;fr++)add(s,fr);name=SNAME[s]+'-snaar';}
+  else{for(let s=0;s<6;s++)for(let fr=0;fr<=MAXF;fr++)add(s,fr);}
+  return{notes,win,name,hi:Math.max(MAXF,...notes.map(n=>n.f+1))};}
+const LENS={all:'Hele hals',pos:'CAGED-positie',nps:'3 noten per snaar',set:'Snaarset',str:'Eén snaar'};
+const lensCount={all:0,pos:5,nps:7,set:4,str:6};
+
+/* ================= opslag ================= */
+const SK='halskaart.v1';
+let store={stats:{},err:{},cfg:null,ui:{}};
+try{const raw=localStorage.getItem(SK);if(raw)store=Object.assign(store,JSON.parse(raw));}catch(e){}
+function save(){try{localStorage.setItem(SK,JSON.stringify(store));}catch(e){}}
+const cfg=Object.assign({root:9,fid:'pmin',lens:{t:'pos',i:0},lay:'all',lab:'deg'},store.cfg||{});
+if(!F[cfg.fid])cfg.fid='pmin';
+const ui=Object.assign({drill:'trap',rk:true,rp:true,hint:true,auto:true,sound:true,gate:40},store.ui||{});
+function saveCfg(){store.cfg=cfg;store.ui=ui;save();}
+function rec(k,ok,ms){const a=store.stats[k]||(store.stats[k]=[]);a.push([ok?1:0,Math.round(ms)]);if(a.length>20)a.shift();save();}
+function score(k){const a=store.stats[k];if(!a||!a.length)return 0;return a.reduce((x,r)=>x+r[0],0)/a.length*Math.min(1,a.length/10);}
+
+/* ================= hals tekenen ================= */
+function board(o){
+  const lo=o.lo||0,hi=o.hi||MAXF,FW=54,OW=38,RH=33,T=o.wins?30:12,L=22;const cols=[];let x=L;
+  if(lo===0){cols.push({f:0,x0:x,x1:x+OW});x+=OW;}
+  for(let f=Math.max(1,lo);f<=hi;f++){cols.push({f,x0:x,x1:x+FW});x+=FW;}
+  const W=x+8,H=T+RH*6+22,y=s=>T+RH*(5-s)+RH/2,col=f=>cols[f-lo];
+  const bx0=lo===0?cols[0].x1:cols[0].x0,bx1=cols[cols.length-1].x1;
+  let g=`<rect class="wood" x="${bx0}" y="${T}" width="${bx1-bx0}" height="${RH*6}" rx="3"/>`;
+  for(const c of cols){const cx=(c.x0+c.x1)/2;
+    const dia=cy=>`<path class="inlay" d="M${cx-6} ${cy}L${cx} ${cy-8}L${cx+6} ${cy}L${cx} ${cy+8}Z"/>`;
+    if([3,5,7,9,15,17,19].includes(c.f))g+=dia(T+RH*3);
+    if(c.f===12)g+=dia(T+RH*1.5)+dia(T+RH*4.5);
+    if(c.f>=1)g+=`<line class="wire" x1="${c.x1}" y1="${T}" x2="${c.x1}" y2="${T+RH*6}"/>`;
+    g+=`<text class="fnum${[3,5,7,9,12,15,17,19].includes(c.f)?' k':''}" x="${cx}" y="${H-5}">${c.f}</text>`;}
+  g+=`<line class="${lo===0?'nut':'wire'}" x1="${bx0}" y1="${T}" x2="${bx0}" y2="${T+RH*6}"/>`;
+  for(let s=0;s<6;s++){g+=`<line class="str" x1="${bx0}" y1="${y(s)}" x2="${bx1}" y2="${y(s)}" stroke-width="${(2.7-s*.34).toFixed(2)}"/>`;
+    g+=`<text class="sn" x="${L/2}" y="${y(s)}">${SNAME[s]}</text>`;}
+  if(o.win){const a=col(Math.max(o.win.start,lo)),b=col(Math.min(o.win.end,hi));if(a&&b)g+=`<rect class="win" x="${a.x0+2}" y="${T-7}" width="${b.x1-a.x0-4}" height="${RH*6+14}" rx="8"/>`;}
+  (o.wins||[]).forEach((w,i)=>{const a=col(Math.max(w.start,lo)),b=col(Math.min(w.end,hi));if(!a||!b)return;
+    g+=`<rect class="win" x="${a.x0+3}" y="${T-7}" width="${b.x1-a.x0-6}" height="${RH*6+14}" rx="8"/><text class="wl" x="${(a.x0+b.x1)/2}" y="${T-13}">${w.label}</text>`;});
+  for(const d of o.dots||[]){const c=col(d.f);if(!c)continue;const cx=(c.x0+c.x1)/2,cy=y(d.s);
+    if(d.ring)g+=`<circle class="ring-${d.ring}" cx="${cx}" cy="${cy}" r="${d.ring==='ch'?16:17.5}"/>`;
+    g+=`<circle class="d d-${d.cls}" cx="${cx}" cy="${cy}" r="12.5"/>`;
+    if(d.label)g+=`<text class="dl${d.cls==='ghost'?' g':(d.cls==='miss'||d.cls==='tone')?' m':''}" x="${cx}" y="${cy+.5}">${d.label}</text>`;}
+  for(const k of o.links||[]){const ca=col(k.a[1]),cb=col(k.b[1]);if(!ca||!cb)continue;
+    const x1=(ca.x0+ca.x1)/2,y1=y(k.a[0]),x2=(cb.x0+cb.x1)/2,y2=y(k.b[0]),d=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/d,uy=(y2-y1)/d,ex=x2-ux*16,ey=y2-uy*16;
+    g+=`<line class="lk" x1="${x1+ux*15}" y1="${y1+uy*15}" x2="${ex}" y2="${ey}"/><path class="lkh" d="M${ex+ux*3} ${ey+uy*3}L${ex-ux*8-uy*5} ${ey-uy*8+ux*5}L${ex-ux*8+uy*5} ${ey-uy*8-ux*5}Z"/>`;}
+  for(const m of o.xs||[]){const c=col(m.f);if(!c)continue;const cx=(c.x0+c.x1)/2,cy=y(m.s);
+    g+=`<path class="xm" d="M${cx-8} ${cy-8}L${cx+8} ${cy+8}M${cx+8} ${cy-8}L${cx-8} ${cy+8}"/>`;}
+  for(const c of cols)for(let s=0;s<6;s++)g+=`<rect class="tap" data-s="${s}" data-f="${c.f}" x="${c.x0}" y="${y(s)-RH/2}" width="${c.x1-c.x0}" height="${RH}"/>`;
+  return`<svg viewBox="0 0 ${W} ${H}"${o.fit?` style="max-width:${W}px;min-width:${Math.min(W,300)}px"`:''} role="img" aria-label="Gitaarhals, fret ${lo} tot ${hi}">${g}</svg>`;}
+function onTap(el,fn){el.addEventListener('click',e=>{const t=e.target.closest('.tap');if(t)fn(+t.dataset.s,+t.dataset.f);});}
+function nd(n,fid,lab,extra){return Object.assign({s:n.s,f:n.f,cls:ivClass(fid,n.iv),label:lab==='deg'?deg(fid,n.iv):lab==='note'?NOTE[n.midi%12]:''},extra||{});}
+
+/* ================= geluid ================= */
+const Au={ctx:null,dr:null,
+  ensure(){if(!this.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;this.ctx=new C();}if(this.ctx.state==='suspended')this.ctx.resume();return this.ctx;},
+  pluck(midi){const c=this.ensure();if(!c)return;const t=c.currentTime,o=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();
+    o.type='sawtooth';o.frequency.value=440*Math.pow(2,(midi-69)/12);lp.type='lowpass';lp.frequency.setValueAtTime(2600,t);lp.frequency.exponentialRampToValueAtTime(500,t+.5);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.2,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+1.1);
+    o.connect(lp);lp.connect(g);g.connect(c.destination);o.start(t);o.stop(t+1.15);},
+  drone(root){this.stopDrone();const c=this.ensure();if(!c)return;const g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
+    g.gain.value=.0001;g.gain.exponentialRampToValueAtTime(.11,c.currentTime+.6);lp.connect(g);g.connect(c.destination);
+    const base=40+mod(root-4),os=[base,base+7,base+12].map((m,i)=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(m-69)/12);o.detune.value=i*4-4;o.connect(lp);o.start();return o;});
+    this.dr={g,os};},
+  stopDrone(){if(!this.dr)return;const d=this.dr;this.dr=null;try{d.g.gain.exponentialRampToValueAtTime(.0001,this.ctx.currentTime+.2);d.os.forEach(o=>o.stop(this.ctx.currentTime+.25));}catch(e){}}
+};
+
+/* ---- toonhoogte: McLeod-methode op een gehalveerd venster, met aanslagdetectie ---- */
+const gateFrom=v=>0.05*Math.pow(0.06,v/100);
+function makeEngine(){
+  return{onsetAt:-1e9,last:null,hist:[],hfHist:[],lastOnset:-1e9,silent:0,
+  mpm(x,sr){const M=x.length,tauMin=Math.floor(sr/1000),tauMax=Math.min(Math.floor(sr/70),M>>1);
+    const n=new Float32Array(tauMax+2);let m=0;for(let i=0;i<M;i++)m+=2*x[i]*x[i];
+    for(let tau=0;tau<=tauMax+1;tau++){let r=0;for(let i=0;i<M-tau;i++)r+=x[i]*x[i+tau];n[tau]=m>0?2*r/m:0;m-=x[tau]*x[tau]+x[M-1-tau]*x[M-1-tau];}
+    let t=1;while(t<=tauMax&&n[t]>0)t++;
+    const peaks=[];let best=-1,bi=-1;
+    for(;t<=tauMax;t++){if(n[t]>0){if(n[t]>best){best=n[t];bi=t;}}else if(bi>0){peaks.push(bi);best=-1;bi=-1;}}
+    if(bi>0)peaks.push(bi);
+    const P=peaks.filter(p=>p>=tauMin);if(!P.length)return null;
+    const top=Math.max(...P.map(p=>n[p]));if(top<0.6)return null;
+    const pk=P.find(p=>n[p]>=0.9*top);
+    const a=n[pk-1],b=n[pk],c=n[pk+1],den=a+c-2*b,sh=den?(a-c)/(2*den):0;
+    return{freq:sr/(pk+sh)};},
+  frame(buf,sr,gate,t){
+    const N=buf.length;let rms=0;for(let i=N-2048;i<N;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/2048);
+    let hf=0;for(let i=N-1024;i<N;i++){const d=buf[i]-buf[i-1];hf+=d*d;}hf=Math.sqrt(hf/1024);
+    const prevMin=this.hfHist.length?Math.min(...this.hfHist):0;
+    this.hfHist.push(hf);if(this.hfHist.length>6)this.hfHist.shift();
+    const out={rms};
+    if(rms>gate*1.2&&hf>prevMin*1.9&&t-this.lastOnset>120){this.lastOnset=this.onsetAt=t;this.hist=[];this.last=null;}
+    if(rms<gate){this.hist=[];if(++this.silent>8)this.last=null;return out;}
+    this.silent=0;
+    if(t-this.onsetAt<45)return out;
+    const M=2048,x=new Float32Array(M);let mean=0;
+    for(let j=0;j<M;j++){const i=N-2*M+2*j;x[j]=(buf[i-1>=0?i-1:i]+2*buf[i]+buf[i+1])*0.25;mean+=x[j];}
+    mean/=M;for(let j=0;j<M;j++)x[j]-=mean;
+    const r=this.mpm(x,sr/2);if(!r){this.hist=[];return out;}
+    const m=Math.round(69+12*Math.log2(r.freq/440));out.midi=m;
+    if(m<38||m>91){this.hist=[];return out;}
+    this.hist.push(m);if(this.hist.length>3)this.hist.shift();
+    if(this.hist.length===3&&this.hist.every(v=>v===m)&&m!==this.last){this.last=m;out.note=m;}
+    return out;}};}
+const Mic={on:false,eng:null,
+  async start(){
+    try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Object.assign(new Error('x'),{name:'NoMedia'});
+      this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+      const c=Au.ensure();const src=c.createMediaStreamSource(this.stream);this.an=c.createAnalyser();this.an.fftSize=4096;src.connect(this.an);
+      this.buf=new Float32Array(4096);this.eng=makeEngine();this.on=true;this.loop();micUI();
+    }catch(e){micUI(e);}},
+  stop(){if(!this.on)return;this.on=false;try{this.stream.getTracks().forEach(t=>t.stop());}catch(e){}micUI();},
+  loop(){if(!this.on)return;requestAnimationFrame(()=>this.loop());
+    this.an.getFloatTimeDomainData(this.buf);
+    const r=this.eng.frame(this.buf,Au.ctx.sampleRate,gateFrom(ui.gate),performance.now());
+    $('micLvl').style.width=Math.min(100,r.rms*600)+'%';
+    if(r.midi!=null&&r.midi>=38&&r.midi<=91)$('micNote').textContent=NOTE[r.midi%12];
+    if(r.note!=null)heard(r.note,null,null);}};
+function micUI(err){
+  $('micBtn').textContent=Mic.on?'Microfoon uit':'Microfoon aan';$('micBtn').classList.toggle('on',Mic.on);
+  const m=$('micMsg');m.classList.toggle('err',!!err);
+  if(err)m.textContent=window.self!==window.top?'De microfoon is geblokkeerd in deze weergave. Open de losse kopie (index.html) in Chrome om mee te spelen. Tikken op de hals werkt hier wel.'
+    :err.name==='NotAllowedError'?'Toegang geweigerd. Sta de microfoon toe in de site-instellingen van je browser.':'Geen microfoon gevonden. Open de pagina via https.';
+  else m.textContent=Mic.on?'Speel losse noten en laat ze even klinken.':'Zonder microfoon: tik de noot op de hals.';}
+
+/* ================= context-balk (toonsoort, materiaal, lens) ================= */
+function renderCtx(el){
+  const f=F[cfg.fid];if(cfg.lens.t==='nps'&&f.iv.length!==7)cfg.lens={t:'pos',i:0};
+  const L=cfg.lens,n=lensCount[L.t];let idx='';
+  for(let i=0;i<n;i++){let lab;
+    if(L.t==='pos'){const sn=shapeName(getLens(cfg.fid,cfg.root,{t:'pos',i}).notes,cfg.fid);lab=(i+1)+(sn?' · '+sn.replace('-vorm',''):'');}
+    else if(L.t==='nps')lab='vanaf '+deg(cfg.fid,f.iv[i]);
+    else if(L.t==='set')lab=SNAME.slice(i,i+3).join('-');
+    else lab=SNAME[i];
+    idx+=`<button class="chip" data-li="${i}" aria-pressed="${(L.i||0)===i}">${lab}</button>`;}
+  el.innerHTML=`<div class="wide"><span class="lbl">Grondtoon</span><div class="row">${NOTE.map((nm,i)=>`<button class="chip k" data-root="${i}" aria-pressed="${cfg.root===i}">${nm}</button>`).join('')}</div></div>
+  <div><span class="lbl">Materiaal</span><select class="chip" data-fid aria-label="Materiaal">${Object.keys(GROUPS).map(g=>`<optgroup label="${GROUPS[g]}">${Object.keys(F).filter(k=>F[k].g===g).map(k=>`<option value="${k}"${k===cfg.fid?' selected':''}>${F[k].n}</option>`).join('')}</optgroup>`).join('')}</select></div>
+  <div><span class="lbl">Lens</span><select class="chip" data-lt aria-label="Lens">${Object.keys(LENS).map(k=>`<option value="${k}"${k===L.t?' selected':''}${k==='nps'&&f.iv.length!==7?' disabled':''}>${LENS[k]}</option>`).join('')}</select></div>
+  ${n?`<div class="wide"><span class="lbl">${L.t==='pos'?'Positie':L.t==='nps'?'Patroon':L.t==='set'?'Snaren':'Snaar'}</span><div class="row">${idx}</div></div>`:''}`;}
+function bindCtx(el,after){
+  el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.root!=null)cfg.root=+b.dataset.root;else if(b.dataset.li!=null)cfg.lens.i=+b.dataset.li;else return;saveCfg();after();});
+  el.addEventListener('change',e=>{const t=e.target;if(t.dataset.fid!=null)cfg.fid=t.value;else if(t.dataset.lt!=null)cfg.lens={t:t.value,i:0};else return;saveCfg();after();});}
+
+/* ================= HALS (verkennen) ================= */
+let exSel=null;
+function renderExplore(){
+  renderCtx($('exCtx'));
+  const f=F[cfg.fid],L=getLens(cfg.fid,cfg.root,cfg.lens);
+  const keep=cfg.lay==='chord'?chordSet(cfg.fid):cfg.lay==='pent'?pentSet(cfg.fid):f.iv;
+  const dots=L.notes.map(n=>keep.includes(n.iv)?nd(n,cfg.fid,cfg.lab,{ring:exSel===key(n)?'cur':(f.ch||[]).includes(n.iv)?'ch':null}):nd(n,cfg.fid,cfg.lab,{cls:'ghost'}));
+  $('exBoard').innerHTML=board({dots,win:L.win,hi:L.hi});
+  $('exLayer').innerHTML=[['all','Alles'],['pent','Pentatonisch'],['chord','Akkoordtonen']].map(([k,l])=>`<button class="chip" data-lay="${k}" aria-pressed="${cfg.lay===k}">${l}</button>`).join('');
+  $('exLab').innerHTML=[['deg','Trappen'],['note','Noten'],['none','Geen']].map(([k,l])=>`<button class="chip" data-lab="${k}" aria-pressed="${cfg.lab===k}">${l}</button>`).join('');
+  $('legend').innerHTML=`<span><i class="sw" style="background:var(--c1)"></i>grondtoon</span><span><i class="sw" style="background:var(--c3)"></i>terts</span><span><i class="sw" style="background:var(--c5)"></i>kwint</span><span><i class="sw" style="background:var(--c7)"></i>septiem</span><span><i class="sw o"></i>overige</span>${f.ch?'<span><i class="sw r"></i>kleurnoot</span>':''}`;
+  const M=mod(cfg.root+f.par);let rel='';
+  if(f.iv.length===7&&cfg.fid!=='ion'&&f.g==='mode')rel=`Zelfde noten als ${NOTE[M]} majeur. `;
+  if(cfg.fid==='phd')rel=`Zelfde noten als ${NOTE[mod(cfg.root+5)]} harmonisch mineur. `;
+  const chTxt=f.ch?`Kleurnoot: ${f.ch.map(iv=>deg(cfg.fid,iv)+' ('+NOTE[mod(cfg.root+iv)]+')').join(' en ')}. `:'';
+  $('exInfo').innerHTML=`<b>${NOTE[cfg.root]} · ${esc(f.n)} <span class="muted" style="font-family:var(--f-b);font-size:.9rem;font-weight:400">${esc(L.name)}</span></b>
+    <span class="f">${f.iv.map(iv=>deg(cfg.fid,iv)).join(' ')} &nbsp;·&nbsp; ${f.iv.map(iv=>NOTE[mod(cfg.root+iv)]).join(' ')}</span>
+    <span class="muted small">${rel}${chTxt}${f.tip||''}</span>`;
+  $('exSound').checked=ui.sound;}
+onTap($('exBoard'),(s,f)=>{const n=mk(s,f,cfg.root);exSel=key(n);if(ui.sound)Au.pluck(n.midi);renderExplore();
+  const el=document.createElement('span');el.className='small';el.innerHTML=`Getikt: <b style="font-size:1rem">${NOTE[n.midi%12]}</b> op de ${SNAME[s]}-snaar, fret ${f} = trap ${DEGN[n.iv]} van ${NOTE[cfg.root]}`;$('exInfo').appendChild(el);});
+bindCtx($('exCtx'),()=>{exSel=null;renderExplore();});
+$('v-hals').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.lay){cfg.lay=b.dataset.lay;saveCfg();renderExplore();}if(b.dataset.lab){cfg.lab=b.dataset.lab;saveCfg();renderExplore();}});
+$('exSound').onchange=e=>{ui.sound=e.target.checked;saveCfg();};
+$('exGo').onclick=()=>{show('oef');};
+
+/* ================= oefeningen ================= */
+const run={};
+function wpick(items,kf){const w=items.map(x=>1+Math.min(4,store.err[kf(x)]||0));let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<items.length;i++){r-=w[i];if(r<=0)return items[i];}return items[items.length-1];}
+function mark(k,ok){store.err[k]=Math.max(0,(store.err[k]||0)+(ok?-1:2));}
+function qctx(fid,forcePos){
+  const root=run.rk?rnd(12):cfg.root;let lens=Object.assign({},run.lens);
+  if(lens.t==='nps'&&F[fid].iv.length!==7)lens={t:'pos',i:0};
+  if(forcePos&&lens.t==='all')lens={t:'pos',i:rnd(5)};else if(run.rp&&lensCount[lens.t])lens.i=rnd(lensCount[lens.t]);
+  return{root,fid,L:getLens(fid,root,lens)};}
+const kn=c=>`${NOTE[c.root]} ${F[c.fid].n.toLowerCase()}`;
+const roots=c=>c.L.notes.filter(n=>n.iv===0).map(n=>nd(n,c.fid,'deg'));
+const DR={
+  naam:{n:'Benoem de noot',d:'Eén fret licht op. Welke noot is het?',free:1,make(){const s=rnd(6),f=rnd(13),p=(OPEN[s]+f)%12;
+    return{type:'choice',prompt:'Welke noot is dit?',dots:[{s,f,cls:'tone',ring:'cur'}],choices:NOTE.map((l,i)=>({l,ok:i===p})),after:[{s,f,cls:'ok',label:NOTE[p]}],ek:'n'+p};}},
+  vind:{n:'Vind de noot',d:'Tik een noot op alle zes de snaren.',free:1,make(){const p=wpick([...Array(12).keys()],x=>'n'+x),t=[];
+    for(let s=0;s<6;s++)for(let f=1;f<=12;f++)if((OPEN[s]+f)%12===p)t.push({s,f,iv:0,midi:OPEN[s]+f});
+    return{type:'tap',prompt:`Tik elke <em>${NOTE[p]}</em>, fret 1 t/m 12`,dots:[],targets:t,lab:()=>({cls:'ok',label:NOTE[p]}),ek:'n'+p,inF:(s,f)=>(OPEN[s]+f)%12===p};}},
+  trap:{n:'Benoem de trap',d:'Een noot licht op. Welke trap is het ten opzichte van de grondtoon?',make(){const c=qctx(run.fid),cand=c.L.notes.filter(n=>n.iv!==0);
+    const n=wpick(cand,x=>c.fid+x.iv),f=F[c.fid];
+    return{type:'choice',prompt:`<em>${kn(c)}</em>, ${c.L.name}: welke trap?`,win:c.L.win,hi:c.L.hi,dots:[...(run.hint?roots(c):[]),{s:n.s,f:n.f,cls:'tone',ring:'cur'}],
+      choices:f.iv.filter(iv=>iv!==0).map(iv=>({l:deg(c.fid,iv),ok:iv===n.iv})),after:[...roots(c),nd(n,c.fid,'deg',{ring:'cur'})],ek:c.fid+n.iv,
+      why:`${deg(c.fid,n.iv)} = ${NOTE[n.midi%12]}`};}},
+  zoek:{n:'Zoek de trap',d:'Tik alle noten van één trap binnen de lens.',make(){const c=qctx(run.fid),f=F[c.fid];
+    const iv=wpick(f.iv.filter(v=>v!==0||!run.hint),x=>c.fid+x),t=c.L.notes.filter(n=>n.iv===iv);
+    return{type:'tap',prompt:`<em>${kn(c)}</em>, ${c.L.name}: tik elke <em>${deg(c.fid,iv)}</em>`,win:c.L.win,hi:c.L.hi,dots:run.hint&&iv!==0?roots(c):[],targets:t,lab:n=>nd(n,c.fid,'deg'),ek:c.fid+iv,inF:(s,f)=>mod(OPEN[s]+f-c.root)===iv};}},
+  bouw:{n:'Bouw de vorm',d:'Lege hals met alleen de grondtonen. Tik de hele vorm uit je hoofd.',make(){const c=qctx(run.fid,true);
+    return{type:'tap',prompt:`Bouw <em>${kn(c)}</em> in ${c.L.name}`,win:c.L.win,hi:c.L.hi,dots:roots(c),targets:c.L.notes.filter(n=>n.iv!==0),lab:n=>nd(n,c.fid,'deg'),ek:c.fid+'b',inF:(s,f)=>F[c.fid].iv.includes(mod(OPEN[s]+f-c.root))};}},
+  herken:{n:'Welke is dit?',d:'Een patroon zonder labels. Herken het materiaal aan de vorm rond de grondtoon.',make(){const g=Object.keys(F).filter(k=>F[k].g===F[run.fid].g&&k!=='chr');
+    const fid=wpick(g,x=>'h'+x),c=qctx(fid,true);
+    return{type:'choice',prompt:'Welk materiaal is dit? De rode noot is de grondtoon.',win:c.L.win,hi:c.L.hi,dots:c.L.notes.map(n=>n.iv===0?nd(n,fid,'deg'):{s:n.s,f:n.f,cls:'tone'}),
+      choices:g.map(k=>({l:F[k].n,ok:k===fid})),after:c.L.notes.map(n=>nd(n,fid,'deg',{ring:(F[fid].ch||[]).includes(n.iv)?'ch':null})),ek:'h'+fid,why:`${kn(c)}: ${F[fid].iv.map(iv=>deg(fid,iv)).join(' ')}`};}},
+  gnoot:{n:'Speel de noot',d:'De app noemt een noot en een snaar. Speel hem.',gt:1,free:1,make(){const s=rnd(6),f=1+rnd(11),n={s,f,midi:OPEN[s]+f,iv:0};
+    return{type:'play',loose:1,prompt:`Speel <em>${NOTE[n.midi%12]}</em> op de <em>${SNAME[s]}</em>-snaar`,dots:[],seq:[n],lab:()=>({cls:'ok',label:NOTE[n.midi%12]}),ek:'n'+n.midi%12};}},
+  gtrap:{n:'Speel de trap',d:'De app noemt een trap en een snaar. Vind hem vanuit de grondtoon.',gt:1,make(){const c=qctx(run.fid),n=wpick(c.L.notes.filter(x=>x.iv!==0),x=>c.fid+x.iv);
+    return{type:'play',loose:1,prompt:`<em>${kn(c)}</em>, ${c.L.name}: speel de <em>${deg(c.fid,n.iv)}</em> op de <em>${SNAME[n.s]}</em>-snaar`,win:c.L.win,hi:c.L.hi,dots:run.hint?roots(c):[],seq:[n],lab:x=>nd(x,c.fid,'deg'),ek:c.fid+n.iv};}},
+  gloop:{n:'Loop de vorm',d:'Speel de vorm noot voor noot omhoog en weer terug. De app volgt je.',gt:1,make(){const c=qctx(run.fid,true);let up=c.L.notes.slice().sort((a,b)=>a.s-b.s||a.f-b.f);
+    /* drieklanken op een snaarset: ligging voor ligging in plaats van snaar voor snaar */
+    if(run.lens.t==='set'&&F[c.fid].iv.length===3){const ss=[...new Set(up.map(n=>n.s))],by=ss.map(x=>up.filter(n=>n.s===x));
+      if(by.every(a=>a.length===by[0].length))up=by[0].flatMap((_,k)=>by.map(a=>a[k]));}
+    return{type:'play',prompt:`Loop <em>${kn(c)}</em> in ${c.L.name}, omhoog en terug`,win:c.L.win,hi:c.L.hi,dots:run.hint?c.L.notes.map(n=>nd(n,c.fid,'deg',{cls:'ghost'})):roots(c),seq:up.concat(up.slice(0,-1).reverse()),guide:run.hint,lab:x=>nd(x,c.fid,'deg'),ek:c.fid+'l'};}},
+  jam:{n:'Landen op de drone',d:'Vrij spelen over een drone. De app toont live welke trap je speelt en geeft landingsdoelen.',gt:1,jam:1}
+};
+const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${lt}`;
+const ROUND=d=>d==='bouw'||d==='gloop'?5:10;
+
+function renderSetup(){
+  $('prEx').innerHTML=Object.keys(DR).map(k=>`<button class="excard" data-ex="${k}" aria-pressed="${ui.drill===k}">${DR[k].gt?'<span class="tag">op gitaar</span>':'<span class="tag" style="color:var(--muted)">op scherm</span>'}<b>${DR[k].n}</b><span>${DR[k].d}</span></button>`).join('');
+  renderCtx($('prCtx'));$('prCtx').hidden=!!DR[ui.drill].free;
+  $('prHow').innerHTML=`<span class="lbl">Denkstap</span><p class="small">${HOW[ui.drill]}</p>`;
+  $('prRk').checked=ui.rk;$('prRp').checked=ui.rp;$('prHint').checked=ui.hint;$('prAuto').checked=ui.auto;
+  const d=DR[ui.drill];$('prRk').parentElement.hidden=!!d.free||!!d.jam;$('prRp').parentElement.hidden=!!d.free||!!d.jam||!lensCount[cfg.lens.t];
+  $('prHint').parentElement.hidden=!['trap','zoek','gtrap','gloop'].includes(ui.drill);
+  $('prSum').textContent=d.jam?'Geen ronde: speel zo lang je wilt.':`Ronde van ${ROUND(ui.drill)}.`;}
+$('prEx').addEventListener('click',e=>{const b=e.target.closest('[data-ex]');if(b){ui.drill=b.dataset.ex;saveCfg();renderSetup();}});
+bindCtx($('prCtx'),renderSetup);
+for(const [id,k] of [['prRk','rk'],['prRp','rp'],['prHint','hint'],['prAuto','auto']])$(id).onchange=e=>{ui[k]=e.target.checked;saveCfg();};
+const PL=window.matchMedia('(orientation: landscape) and (max-height: 540px)');
+const setPL=()=>document.documentElement.classList.toggle('pl',PL.matches);setPL();if(PL.addEventListener)PL.addEventListener('change',setPL);
+let wake=null;
+function mode(m){document.body.classList.toggle('running',m==='run');
+  /* telefoon: scherm aan houden en de browserbalken verbergen zolang een ronde loopt (mag geweigerd worden) */
+  try{if(m==='run'){if(PL.matches&&!document.fullscreenElement&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});
+      if(navigator.wakeLock&&!wake)navigator.wakeLock.request('screen').then(w=>{wake=w;}).catch(()=>{});}
+    else{if(wake){wake.release().catch(()=>{});wake=null;}if(document.fullscreenElement&&document.exitFullscreen&&!window.matchMedia('(display-mode: fullscreen)').matches)document.exitFullscreen().catch(()=>{});}}catch(e){}
+  $('prSetup').hidden=m!=='setup';$('prRun').hidden=m!=='run';$('prDone').hidden=m!=='done';}
+
+function startRound(){
+  Object.assign(run,{drill:ui.drill,fid:cfg.fid,lens:Object.assign({},cfg.lens),rk:ui.rk,rp:ui.rp,hint:ui.hint,i:0,res:[],active:true,jam:null});
+  run.key=statKey(run.drill,run.fid,run.lens.t);run.n=ROUND(run.drill);
+  const d=DR[run.drill];mode('run');$('runHowT').textContent=HOW[run.drill];$('prMic').hidden=!d.gt;$('prLive').hidden=!d.jam;$('droneBtn').hidden=!d.jam;$('prChoices').innerHTML='';
+  if(d.gt)micUI();
+  if(d.jam)startJam();else nextQ();}
+function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`<b style="color:var(--fg)">${d.n}</b>${d.free?'':' · '+esc(F[run.fid].n)+' · '+LENS[run.lens.t]}`;
+  $('prPips').innerHTML=d.jam?'':Array.from({length:run.n},(_,i)=>`<span class="pip ${i<run.res.length?(run.res[i].ok?'ok':'no'):i===run.i?'now':''}"></span>`).join('');}
+function nextQ(){
+  clearTimeout(run.tm);if(run.i>=run.n)return finishRound();
+  const q=run.q=DR[run.drill].make();q.found=new Set();q.xs=[];q.idx=0;q.done=false;run.t0=performance.now();
+  $('prPrompt').innerHTML=q.prompt;$('prFb').textContent='';$('prFb').className='fb';$('prNext').hidden=true;$('prShow').hidden=q.type==='choice';
+  $('prChoices').innerHTML=q.type==='choice'?q.choices.map((c,i)=>`<button class="choice" data-c="${i}">${esc(c.l)}</button>`).join(''):'';
+  meta();drawQ();}
+function drawQ(){const q=run.q;let dots=q.dots.slice();
+  if(q.done&&q.after)dots=q.after;
+  if(q.type==='tap'){for(const n of q.targets)if(q.found.has(key(n)))dots.push(q.lab(n));else if(q.done)dots.push(Object.assign(q.lab(n),{cls:'miss'}));}
+  if(q.type==='play'){dots=dots.filter(d=>!q.seq.slice(0,q.idx).some(n=>n.s===d.s&&n.f===d.f));
+    const seen=new Set();q.seq.slice(0,q.idx).forEach(n=>{if(!seen.has(key(n))){seen.add(key(n));dots.push(Object.assign(q.lab(n),q.seq.length>1?{}:{cls:'ok'}));}});
+    const cur=q.seq[q.idx];if(cur&&(q.guide||q.done))dots.push(Object.assign(q.lab(cur),{ring:'cur'}));
+    if(q.done&&!q.okEnd)q.seq.forEach(n=>dots.push(Object.assign(q.lab(n),{cls:'miss'})));}
+  $('prBoard').innerHTML=board({dots,xs:q.xs,win:q.win,hi:q.hi});}
+function finish(ok,msg){const q=run.q;if(q.done)return;q.done=true;q.okEnd=ok;
+  const per=q.type==='play'?Math.max(1,q.seq.length):q.type==='tap'?Math.max(1,q.targets.length):1,ms=(performance.now()-run.t0)/per;
+  run.res.push({ok,ms});rec(run.key,ok,ms);if(q.ek){mark(q.ek,ok);save();}
+  run.i++;meta();drawQ();$('prShow').hidden=true;
+  const fb=$('prFb');fb.className='fb '+(ok?'ok':'no');fb.textContent=(ok?'Goed. ':'Niet goed. ')+(msg||q.why||'');fb.title=fb.textContent;
+  if(ok&&ui.auto)run.tm=setTimeout(nextQ,q.type==='choice'?800:1300);else{$('prNext').hidden=false;$('prNext').textContent=run.i>=run.n?'Afronden':'Volgende';}}
+$('prChoices').addEventListener('click',e=>{const b=e.target.closest('[data-c]'),q=run.q;if(!b||!q||q.done)return;
+  const c=q.choices[+b.dataset.c];[...$('prChoices').children].forEach((el,i)=>{el.disabled=true;if(q.choices[i].ok)el.classList.add('ok');});
+  if(!c.ok)b.classList.add('no');finish(c.ok,c.ok?'':'Het was '+q.choices.find(x=>x.ok).l+'. '+(q.why||''));});
+onTap($('prBoard'),(s,f)=>{if(!run.active)return;if(run.jam)return heard(OPEN[s]+f,s,f);const q=run.q;if(!q||q.done)return;
+  if(q.type==='tap'){let t=q.targets.find(n=>n.s===s&&n.f===f);
+    /* dezelfde toonhoogte op een andere snaar binnen het venster telt als die noot */
+    if(!t&&q.win&&f>=q.win.start&&f<=q.win.end)t=q.targets.find(n=>n.midi===OPEN[s]+f&&!q.found.has(key(n)));
+    /* een juiste noot buiten deze vorm is geen fout */
+    if(!t&&q.inF&&q.inF(s,f)&&!q.dots.some(d=>d.s===s&&d.f===f)){const fb=$('prFb');fb.className='fb';fb.textContent='Die noot klopt, maar valt buiten deze vorm. Hij telt niet mee.';return;}
+    if(t){if(q.found.has(key(t)))return;q.found.add(key(t));Au.pluck(t.midi);if(q.found.size===q.targets.length)return finish(q.xs.length===0,q.xs.length?`${q.xs.length} keer mis getikt.`:'');}
+    else if(!q.dots.some(d=>d.s===s&&d.f===f)){q.xs.push({s,f});if(q.xs.length>=4)return finish(false,'Te veel missers.');}
+    drawQ();}
+  else if(q.type==='play')heard(OPEN[s]+f,s,f);});
+/* een noot gehoord (microfoon) of getikt (s,f bekend) */
+function heard(midi,s,f){if(!run.active)return;if(run.jam)return jamNote(midi);const q=run.q;if(!q||q.done||q.type!=='play')return;
+  const t=q.seq[q.idx];let hit;
+  if(s!=null)hit=q.loose?(s===t.s&&mod(midi-t.midi)===0):midi===t.midi;
+  else hit=midi===t.midi||(q.loose&&Math.abs(midi-t.midi)===12);
+  if(!hit){if(s!=null){q.xs.push({s,f});drawQ();}return;}
+  if(s!=null)Au.pluck(midi);q.idx++;if(q.idx>=q.seq.length)return finish(q.xs.length===0,q.seq.length>1?`${((performance.now()-run.t0)/1000).toFixed(1)} s voor ${q.seq.length} noten.`:'');
+  drawQ();}
+$('prNext').onclick=nextQ;
+$('prShow').onclick=()=>finish(false,'Dit is het antwoord.');
+$('prStop').onclick=()=>stopRun(true);
+function stopRun(toSetup){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
+function finishRound(){const ok=run.res.filter(r=>r.ok).length,avg=run.res.reduce((a,r)=>a+r.ms,0)/run.res.length/1000;
+  stopRun(false);mode('done');$('dScore').textContent=`${ok} / ${run.res.length}`;
+  $('dText').textContent=`Gemiddeld ${avg.toFixed(1)} s per ${['tap','play'].includes(run.q.type)?'noot':'antwoord'}. Score voor deze oefening: ${Math.round(score(run.key)*100)}%.`;}
+$('dAgain').onclick=startRound;$('dSetup').onclick=()=>{mode('setup');renderSetup();};$('dPad').onclick=()=>show('pad');
+$('prStart').onclick=()=>{Au.ensure();startRound();};
+$('micBtn').onclick=()=>Mic.on?Mic.stop():Mic.start();
+$('micGate').value=ui.gate;$('micGate').oninput=e=>{ui.gate=+e.target.value;saveCfg();};
+$('droneBtn').onclick=()=>{const b=$('droneBtn');if(Au.dr){Au.stopDrone();b.classList.remove('on');b.textContent='Drone aan';}else{Au.drone(run.jam.c.root);b.classList.add('on');b.textContent='Drone uit';}};
+document.addEventListener('keydown',e=>{if($('v-oef').hidden||$('prRun').hidden)return;
+  if(e.key===' '&&!$('prNext').hidden){e.preventDefault();nextQ();}
+  const q=run.q;if(q&&!q.done&&q.type==='choice'&&/^[1-9]$/.test(e.key)){const b=$('prChoices').children[+e.key-1];if(b)b.click();}});
+
+/* ---- jam: drone, live trap, landingsdoelen ---- */
+function startJam(){const root=cfg.root,fid=run.fid,L=getLens(fid,root,run.lens);
+  run.jam={c:{root,fid,L},hits:0,inn:0,out:0,live:null,t0:performance.now()};
+  $('prPrompt').innerHTML=`<em>${NOTE[root]} ${F[fid].n.toLowerCase()}</em>, ${L.name}. Zet de drone aan en speel. Land op het doel en laat de noot klinken.`;
+  $('prFb').textContent='';$('prShow').hidden=true;$('prNext').hidden=true;$('lvDeg').textContent='–';meta();jamTarget();jamDraw();
+  $('micMsg').textContent='Drone via de speaker stoort de microfoon. Gebruik een koptelefoon, of neem een drone op met je looper.';
+  clearInterval(run.jt);run.jt=setInterval(()=>{if(run.jam)jamStat();},1000);}
+function jamTarget(){const j=run.jam,f=F[j.c.fid],pool=f.iv.filter(iv=>iv!==j.target);j.target=wpick(pool,x=>j.c.fid+x);j.tt=performance.now();
+  $('lvTarget').textContent=deg(j.c.fid,j.target);jamStat();}
+function jamStat(){const j=run.jam,s=Math.floor((performance.now()-j.t0)/1000);
+  $('lvStat').innerHTML=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} gespeeld · ${j.hits} landingen · ${j.inn} noten in de ladder, ${j.out} erbuiten`;}
+function jamDraw(){const j=run.jam,c=j.c;
+  $('prBoard').innerHTML=board({win:c.L.win,hi:c.L.hi,dots:c.L.notes.map(n=>nd(n,c.fid,'deg',{ring:j.live!=null&&n.midi===j.live?'live':n.iv===j.target?'cur':null}))});}
+function jamNote(midi){const j=run.jam,iv=mod(midi-j.c.root),inn=F[j.c.fid].iv.includes(iv);j.live=midi;
+  const el=$('lvDeg');el.textContent=inn?deg(j.c.fid,iv):DEGN[iv];el.classList.toggle('out',!inn);inn?j.inn++:j.out++;
+  if(iv===j.target){j.hits++;rec(run.key,true,performance.now()-j.tt);mark(j.c.fid+iv,true);jamTarget();}
+  jamStat();jamDraw();}
+
+/* ================= leerpad ================= */
+const STAGES=[
+ {t:'Noten en octaven',s:'Elke noot op elke snaar, zonder tellen',why:'Alles hierna hangt aan nootnamen. Het doel is elke noot binnen een seconde. De octaafvormen zijn je kapstok: wie één C weet, weet ze alle zes.',view:['pow','all'],dr:[['naam'],['vind'],['gnoot']]},
+ {t:'Intervallen',s:'De vaste afstanden vanaf een grondtoon',why:'Een interval is een vaste afstand op de hals. Wie weet waar de 3, de 5 en de ♭7 liggen ten opzichte van een grondtoon, kan elke vorm zelf bouwen en hoeft hem niet te onthouden. Let op de B-snaar: daar schuift alles één fret op. Begin bij de powerchord, die ken je al.',view:['chr','str'],dr:[['zoek','pow','all'],['trap','chr','str'],['trap','chr','pos'],['gtrap','pow','all']]},
+ {t:'Drieklanken',s:'Drie noten op drie snaren, in drie liggingen',why:'De drieklank is het skelet onder elk akkoord en elke solo. Majeur is 1 3 5, mineur 1 ♭3 5. Op een set van drie snaren liggen de drie liggingen als een ketting langs de hals.',view:['maj','set'],dr:[['trap','maj','set'],['trap','min','set'],['bouw','maj','set'],['bouw','min','set'],['herken','maj','set'],['gloop','min','set']]},
+ {t:'CAGED',s:'Vijf akkoordvormen die de hals verdelen',why:'Vijf akkoordvormen bedekken samen de hele hals. Elke positie hierna hoort bij één van die vormen. Leer per vorm waar de grondtonen liggen en bouw de akkoordtonen eromheen.',view:['maj','pos'],dr:[['bouw','maj','pos'],['bouw','min','pos'],['trap','maj','pos'],['zoek','min','pos'],['gloop','maj','pos']]},
+ {t:'Pentatonisch',s:'De drieklank plus twee noten',why:'Mineur pentatonisch is de mineur drieklank plus 4 en ♭7. De vijf boxen liggen elk rond een CAGED-vorm. Je kent de vormen al; leer ze nu als trappen, zodat je weet op welke noot je landt.',view:['pmin','pos'],dr:[['trap','pmin','pos'],['zoek','pmin','pos'],['bouw','pmin','pos'],['trap','pmaj','pos'],['gloop','pmin','pos'],['jam','pmin','pos']]},
+ {t:'Majeur en mineur',s:'Pentatonisch plus nog twee noten',why:'De volledige ladder is de pentatonische ladder met twee noten erbij. Eerst in de vijf posities, daarna met drie noten per snaar: dat patroon loopt gelijkmatig en is gemaakt voor snelheid.',view:['aeo','pos'],dr:[['bouw','aeo','pos'],['bouw','ion','pos'],['trap','aeo','pos'],['bouw','aeo','nps'],['gtrap','aeo','pos'],['gloop','aeo','nps']]},
+ {t:'Arpeggio’s',s:'Akkoordtonen als landingsplaatsen',why:'Een arpeggio is een akkoord, noot voor noot gespeeld. Het zijn de noten waarop een solo goed landt. Een septiemakkoord is een drieklank met een 7 erbij.',view:['m7','pos'],dr:[['bouw','m7','pos'],['bouw','dom7','pos'],['trap','maj7','pos'],['herken','m7','pos'],['gloop','m7','pos']]},
+ {t:'Modi',s:'Dezelfde vormen, één kleurnoot per modus',why:'Een modus is geen nieuwe vorm. Het is de pentatonische ladder die je kent, met twee noten erbij, waarvan er één de klank bepaalt. Dorisch is mineur met een 6, Phrygisch mineur met een ♭2, Mixolydisch majeur met een ♭7. Leer per modus die ene kleurnoot vinden en erop landen.',view:['dor','pos'],dr:[['zoek','dor','pos'],['trap','phr','pos'],['trap','mix','pos'],['herken','dor','pos'],['bouw','dor','pos'],['jam','dor','pos'],['jam','phr','pos']]},
+ {t:'Metal-kleuren',s:'Harmonisch mineur en Phrygisch dominant',why:'Harmonisch mineur is mineur met een grote 7. Phrygisch dominant is dezelfde ladder vanaf zijn vijfde trap. Samen geven ze de neoklassieke klank van Blackmore en veel powermetal. Ten opzichte van wat je al kent verschuift telkens één noot.',view:['hmin','pos'],dr:[['bouw','hmin','pos'],['trap','phd','pos'],['herken','hmin','pos'],['gloop','hmin','nps'],['jam','phd','pos']]},
+ {t:'De hele hals',s:'Posities loslaten en verbinden',why:'Nu de posities losser worden: speel langs één snaar, vind trappen over de hele hals en land op doelen terwijl de drone loopt. Dit is waar de losse vormen één kaart worden.',view:['aeo','all'],dr:[['zoek','aeo','all'],['trap','aeo','str'],['gloop','pmin','str'],['jam','aeo','all']]}
+];
+const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+const pKey=p=>statKey(p[0],p[1],p[2]);
+const pLabel=p=>DR[p[0]].free?DR[p[0]].n:`${DR[p[0]].n} · ${F[p[1]].n} · ${LENS[p[2]].toLowerCase()}`;
+const stageProg=st=>st.dr.reduce((a,p)=>a+Math.min(1,score(pKey(p))/0.85),0)/st.dr.length;
+function loadPreset(p){ui.drill=p[0];if(p[1]){cfg.fid=p[1];cfg.lens={t:p[2],i:0};}ui.rk=!DR[p[0]].jam;ui.rp=true;saveCfg();show('oef');}
+function renderPad(){
+  const prog=STAGES.map(stageProg);let cur=prog.findIndex(v=>v<1);if(cur<0)cur=STAGES.length-1;
+  const st=STAGES[cur],cards=[];
+  const practised=[];STAGES.forEach((s,i)=>s.dr.forEach(p=>{const a=store.stats[pKey(p)];if(a&&a.length>=5&&i<=cur)practised.push(p);}));
+  practised.sort((a,b)=>score(pKey(a))-score(pKey(b)));
+  if(practised[0]&&score(pKey(practised[0]))<0.85)cards.push(['Opfrissen',practised[0],'Je zwakste oefening tot nu toe']);
+  const nw=st.dr.find(p=>!DR[p[0]].gt&&score(pKey(p))<0.85&&p!==practised[0]);if(nw)cards.push(['Nieuw in stap '+ROMAN[cur],nw,st.t]);
+  const gt=st.dr.find(p=>DR[p[0]].gt&&score(pKey(p))<0.85)||st.dr.find(p=>DR[p[0]].gt);if(gt)cards.push(['Met de gitaar',gt,'Vijf minuten is genoeg']);
+  $('today').innerHTML=cards.map((c,i)=>`<button class="tcard" data-tc="${i}"><span class="lbl">${c[0]}</span><b>${esc(pLabel(c[1]))}</b><span class="muted small">${esc(c[2])}</span></button>`).join('');
+  $('today').onclick=e=>{const b=e.target.closest('[data-tc]');if(b)loadPreset(cards[+b.dataset.tc][1]);};
+  $('stages').innerHTML=STAGES.map((s,i)=>`<details class="stage"${i===cur?' open':''}><summary><span class="no">${ROMAN[i]}</span><h3>${s.t}<small>${s.s}</small></h3><span class="bar${prog[i]>=1?' done':''}" title="${Math.round(prog[i]*100)}%"><span style="width:${Math.round(prog[i]*100)}%"></span></span></summary>
+    <div class="sbody"><p>${s.why}</p><div class="plist">${s.dr.map((p,j)=>{const v=score(pKey(p));return`<button class="pchip" data-st="${i}" data-p="${j}"><i class="m ${v>=.85?'f':v>0?'h':''}"></i><span>${esc(pLabel(p))}</span>${DR[p[0]].gt?'<span class="tag">gitaar</span>':''}</button>`;}).join('')}</div>
+    <div class="row"><button class="btn" data-les="${i}">Uitleg</button><button class="btn ghost" data-view="${i}">Bekijk op de hals</button></div></div></details>`).join('');}
+$('stages').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.p!=null)loadPreset(STAGES[+b.dataset.st].dr[+b.dataset.p]);
+  if(b.dataset.les!=null){lesI=+b.dataset.les;show('les');}
+  if(b.dataset.view!=null){const v=STAGES[+b.dataset.view].view;cfg.fid=v[0];cfg.lens={t:v[1],i:0};saveCfg();show('hals');}});
+
+/* ================= uitleg: het denkmodel per stap ================= */
+const P=(s,f,label,cls,ring)=>({s,f,label,cls:cls||'tone',ring});
+const posAt=(fid,root,lo)=>{const a=posLos(fid,root);let bi=0;a.forEach((v,i)=>{if(Math.abs(v-lo)<Math.abs(a[bi]-lo))bi=i;});return bi;};
+/* een lens als diagram; only = alleen deze trappen gekleurd, ring = deze trappen omcirkeld */
+function LB(fid,root,lens,o){o=o||{};if(lens.t==='pos'&&lens.at!=null)lens={t:'pos',i:posAt(fid,root,lens.at)};
+  const L=getLens(fid,root,lens),crop=!!L.win;
+  return{fit:1,lo:crop?Math.max(0,L.win.start-1):0,hi:crop?L.win.end+1:L.hi,win:L.win,cap:o.cap,
+    dots:L.notes.map(n=>o.only&&!o.only.includes(n.iv)?nd(n,fid,'deg',{cls:'ghost'}):nd(n,fid,o.lab||'deg',{ring:o.ring&&o.ring.includes(n.iv)?'ch':null}))};}
+const NAT=[0,2,4,5,7,9,11];
+/* de vijf akkoordgrepen zoals je ze open speelt, per snaar E A D G B e (null = snaar niet gespeeld) */
+const GRIP={maj:{C:[null,3,2,0,1,0],A:[null,0,2,2,2,0],G:[3,2,0,0,0,3],E:[0,2,2,1,0,0],D:[null,null,0,2,3,2]},
+  min:{C:[null,3,1,0,1,null],A:[null,0,2,2,1,0],G:[3,1,0,0,3,3],E:[0,2,2,0,0,0],D:[null,null,0,2,3,1]}};
+const ANCH={C:[1,3],A:[1,0],G:[0,3],E:[0,0],D:[2,0]};   // snaar en fret van de laagste grondtoon in de open greep
+function grip(q,L,root,up){const n=mod(root-OPEN[ANCH[L][0]]-ANCH[L][1])+(up?12:0),notes=[];
+  GRIP[q][L].forEach((o,s)=>{if(o!=null)notes.push(mk(s,n+o,root));});return{n,notes,end:Math.max(...notes.map(x=>x.f))};}
+/* diagram met een of meer grepen; de overige akkoordtonen blijven vaag zichtbaar */
+function GB(q,root,list,o){o=o||{};const gs=list.map(x=>Object.assign(grip(q,x[0],root,x[1]),{L:x[0]})).filter(g=>g.end<=MAXF),one=gs.length===1;
+  const lo=one?Math.max(0,gs[0].n-1):0,hi=one?gs[0].end+1:MAXF,seen=new Set(),dots=[];
+  for(const g of gs)for(const n of g.notes){if(seen.has(key(n)))continue;seen.add(key(n));dots.push(o.only&&!o.only.includes(n.iv)?nd(n,q,'deg',{cls:'ghost'}):nd(n,q,'deg'));}
+  for(const n of getLens(q,root,{t:'all'}).notes)if(!seen.has(key(n))&&n.f>=lo&&n.f<=hi)dots.unshift(nd(n,q,'',{cls:'ghost'}));
+  return{fit:1,lo,hi,dots,wins:gs.map(g=>({start:g.n,end:g.end,label:g.L+(q==='min'?'m':'')})),cap:o.cap};}
+const cagedOrder=(q,root)=>['C','A','G','E','D'].map(L=>[L,grip(q,L,root).n]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+const LESSONS=[
+ [{h:'Begin met twee snaren',p:'Leer eerst alleen de E- en de A-snaar uit je hoofd. Alle stamtonen liggen twee frets uit elkaar, behalve E–F en B–C: die liggen naast elkaar. Fret 12 is weer de open snaar. De kruisen en mollen zijn de frets ertussen.',
+   b:()=>[{fit:1,hi:12,dots:[0,1].flatMap(s=>[...Array(13).keys()].filter(f=>NAT.includes((OPEN[s]+f)%12)).map(f=>P(s,f,NOTE[(OPEN[s]+f)%12])))}]},
+  {h:'Octaaf vanaf de E- en A-snaar',p:'Dezelfde noot een octaaf hoger ligt twee snaren hoger en twee frets verder. Zo ken je via de E-snaar meteen de D-snaar, en via de A-snaar de G-snaar.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(1,3,'C','root'),P(3,5,'C','root'),P(0,3,'G','fifth'),P(2,5,'G','fifth')],links:[{a:[1,3],b:[3,5]},{a:[0,3],b:[2,5]}],cap:'+2 snaren, +2 frets'}]},
+  {h:'Octaaf vanaf de D- en G-snaar',p:'De B-snaar is een halve toon lager gestemd dan je zou verwachten. Daarom wordt de sprong hier één fret groter: twee snaren hoger en drie frets verder.',
+   b:()=>[{fit:1,lo:3,hi:9,dots:[P(2,5,'G','fifth'),P(4,8,'G','fifth'),P(3,5,'C','root'),P(5,8,'C','root')],links:[{a:[2,5],b:[4,8]},{a:[3,5],b:[5,8]}],cap:'+2 snaren, +3 frets'}]},
+  {h:'De ketting',p:'Rijg de sprongen aan elkaar en je hebt alle zes. Er zijn twee kettingen: E → D → B en A → G → e. De hoge e-snaar is gelijk aan de lage E-snaar. Wie één C weet, weet ze allemaal.',
+   b:()=>[{fit:1,hi:15,dots:[P(0,8,'C','root'),P(2,10,'C','root'),P(4,13,'C','root'),P(1,3,'C','root'),P(3,5,'C','root'),P(5,8,'C','root'),P(4,1,'C','root')],links:[{a:[0,8],b:[2,10]},{a:[2,10],b:[4,13]},{a:[1,3],b:[3,5]},{a:[3,5],b:[5,8]}]}]}],
+ [{h:'Op één snaar is een interval een aantal frets',p:'Elke fret is een halve toon. Vanaf de grondtoon: ♭3 is 3 frets, 3 is 4, 4 is 5, 5 is 7, ♭7 is 10 en het octaaf 12. Dit is de liniaal waar alle vormen uit volgen.',
+   b:()=>[{fit:1,lo:2,hi:15,dots:[...Array(13).keys()].map(i=>P(1,3+i,DEGN[i%12],ivClass('chr',i%12)))}]},
+  {h:'Eén snaar hoger',p:'De volgende snaar klinkt 5 frets hoger. Dezelfde fret op de volgende snaar is dus de 4. Daaromheen liggen de noten die je het meest nodig hebt: de 5 ligt twee frets verder (de powerchord), de 3 één fret terug, de ♭3 twee frets terug.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(0,5,'1','root'),P(1,3,'♭3','third'),P(1,4,'3','third'),P(1,5,'4'),P(1,7,'5','fifth')],links:[{a:[0,5],b:[1,7]}]}]},
+  {h:'Twee snaren hoger',p:'Twee snaren hoger ligt het octaaf twee frets verder. Recht boven de grondtoon ligt de ♭7, daartussen de 7, en één fret terug de 6.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(0,5,'1','root'),P(1,7,'5','fifth'),P(2,4,'6'),P(2,5,'♭7','sev'),P(2,6,'7','sev'),P(2,7,'1','root')],links:[{a:[0,5],b:[2,7]}]}]},
+  {h:'De B-snaar schuift alles één fret op',p:'Steek je over van de G- naar de B-snaar, dan ligt elke vorm één fret hoger dan je gewend bent. De 4 ligt niet recht erboven maar één fret verder, de 3 ligt recht erboven. Dit is de enige uitzondering op de hals.',
+   b:()=>[{fit:1,lo:3,hi:9,dots:[P(3,5,'1','root'),P(4,4,'♭3','third'),P(4,5,'3','third'),P(4,6,'4'),P(4,8,'5','fifth')],links:[{a:[3,5],b:[4,8]}]}]},
+  {h:'Zo werk je van grondtoon naar doel',p:'Tel niet door de ladder. Zie eerst de dichtstbijzijnde grondtoon. Pak dan een anker dat je blind weet: de 5 of het octaaf. Het doel ligt altijd vlak bij een anker: ♭7 is twee frets onder het octaaf, 6 is twee frets boven de 5, 3 en ♭3 liggen vlak onder de 4. Corrigeer als laatste voor de B-snaar.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(0,5,'1','root'),P(1,3,'♭3','third'),P(1,4,'3','third'),P(1,5,'4'),P(1,7,'5','fifth'),P(2,4,'6'),P(2,5,'♭7','sev'),P(2,7,'1','root')],links:[{a:[0,5],b:[1,7]},{a:[0,5],b:[2,7]},{a:[2,7],b:[2,5]}]}]}],
+ [{h:'Drie noten: 1, 3 en 5',p:'Een majeur drieklank is de grondtoon met de 3 en de 5 erboven. Op drie naast elkaar liggende snaren past hij onder drie vingers. Hier C majeur op de snaren G, B en e.',
+   b:()=>[{fit:1,lo:2,hi:6,dots:[P(3,5,'1','root'),P(4,5,'3','third'),P(5,3,'5','fifth')]}]},
+  {h:'Drie liggingen langs de hals',p:'Zet een andere noot onderaan en je krijgt de volgende ligging. De drie liggingen volgen elkaar op langs de hals en beginnen na 12 frets opnieuw. De plaats van de grondtoon vertelt welke ligging het is: onderaan, bovenaan of in het midden.',
+   b:()=>[{fit:1,lo:2,hi:14,dots:[P(3,5,'1','root'),P(4,5,'3','third'),P(5,3,'5','fifth'),P(3,9,'3','third'),P(4,8,'5','fifth'),P(5,8,'1','root'),P(3,12,'5','fifth'),P(4,13,'1','root'),P(5,12,'3','third')]}]},
+  {h:'Mineur: de terts één fret omlaag',p:'Verlaag in elke ligging alleen de 3 naar de ♭3. De 1 en de 5 blijven staan. Je leert dus geen zes vormen maar drie, met één beweeglijke noot.',
+   b:()=>[{fit:1,lo:2,hi:14,dots:[P(3,5,'1','root'),P(4,4,'♭3','third'),P(5,3,'5','fifth'),P(3,8,'♭3','third'),P(4,8,'5','fifth'),P(5,8,'1','root'),P(3,12,'5','fifth'),P(4,13,'1','root'),P(5,11,'♭3','third')]}]},
+  {h:'Zo werk je',p:'Zoek de grondtoon op een van de drie snaren. Staat hij op de laagste snaar, dan liggen 3 en 5 erboven. Staat hij bovenaan, dan liggen 3 en 5 eronder. Staat hij in het midden, dan ligt de 5 eronder en de 3 erboven. Op andere snaarsets zijn de vormen gelijk, op de verschuiving bij de B-snaar na.',
+   b:()=>[LB('maj',0,{t:'set',i:2})]}],
+ [{h:'Een open akkoord is een vorm',p:'Dit is het open C-akkoord zoals je het grijpt: 1, 3 en 5, verdeeld over vijf snaren. De vage stippen zijn dezelfde akkoordtonen die je in deze greep niet speelt. Onthoud waar de grondtonen zitten: bij de C-vorm op de A- en de B-snaar.',
+   b:()=>[GB('maj',0,[['C']])]},
+  {h:'De vijf grepen',p:'De vijf open akkoorden C, A, G, E en D kun je allemaal verschuiven. Je wijsvinger neemt dan de plaats in van de topkam. Hier zijn alle vijf als C-akkoord gegrepen. Je hoeft ze niet allemaal volledig te kunnen spelen; het gaat om het beeld van de vorm en de plek van de grondtonen.',
+   b:()=>cagedOrder('maj',0).map(L=>GB('maj',0,[[L]],{cap:L+'-vorm'}))},
+  {h:'Vijf vormen, één akkoord',p:'Langs de hals liggen de vijf grepen tegen elkaar aan. De volgorde is altijd C, A, G, E, D en begint dan opnieuw. Elke greep begint waar de vorige ophoudt.',
+   b:()=>[GB('maj',0,cagedOrder('maj',0).map(L=>[L]).concat([['C',1]]))]},
+  {h:'Grondtonen zijn de scharnieren',p:'Buurvormen delen een grondtoon. C en A delen die op de A-snaar, A en G die op de G-snaar, G en E die op de E-snaren, E en D die op de D-snaar, D en C die op de B-snaar. Vanaf elke grondtoon kun je dus twee kanten op.',
+   b:()=>[GB('maj',0,cagedOrder('maj',0).map(L=>[L]).concat([['C',1]]),{only:[0]})]},
+  {h:'Mineur werkt hetzelfde',p:'De vijf mineurgrepen liggen op dezelfde plekken, met de ♭3 in plaats van de 3. Hier A mineur. De Em-vorm op fret 5 is de basis van pentatonische box 1.',
+   b:()=>[GB('min',9,cagedOrder('min',9).map(L=>[L]).concat([[cagedOrder('min',9)[0],1]]))]},
+  {h:'Van greep naar positie',p:'In de oefeningen bouw je per positie alle akkoordtonen binnen vijf frets. Dat is de greep, aangevuld met de akkoordtonen die er vlak naast liggen. Zie eerst de greep, vul dan aan.',
+   b:()=>[GB('maj',0,[['E']],{cap:'De greep: E-vorm'}),LB('maj',0,{t:'pos',at:7},{cap:'De positie in de oefening'})]}],
+ [{h:'Begin bij de drieklank',p:'In box 1 van A mineur pentatonisch zit de Em-vorm van A mineur. Zie eerst alleen 1, ♭3 en 5.',
+   b:()=>[LB('pmin',9,{t:'pos',at:5},{only:[0,3,7]})]},
+  {h:'Plus twee noten: 4 en ♭7',p:'De pentatonische ladder is de drieklank met de 4 en de ♭7 erbij. Op elke snaar liggen precies twee noten. Weet je welke van de twee de akkoordtoon is, dan weet je waar je kunt landen.',
+   b:()=>[LB('pmin',9,{t:'pos',at:5})]},
+  {h:'Vijf boxen aan elkaar',p:'Elke box deelt zijn rand met de volgende: de rechterkant van box 1 is de linkerkant van box 2. Samen bedekken ze de hele hals. De grondtonen zijn je oriëntatiepunten.',
+   b:()=>[LB('pmin',9,{t:'all'})]},
+  {h:'Majeur pentatonisch: zelfde vorm, andere grondtoon',p:'C majeur pentatonisch heeft precies dezelfde noten als A mineur pentatonisch. Alleen de thuisbasis verschuift: de ♭3 van A wordt de 1 van C. Je hoeft geen nieuwe box te leren, wel de trappen opnieuw te zien.',
+   b:()=>[LB('pmaj',0,{t:'pos',at:5})]}],
+ [{h:'Mineur: plus 2 en ♭6',p:'De volledige mineurladder is de pentatonische box met twee noten erbij. Beide liggen één fret naast een noot die je al kent: de 2 vlak onder de ♭3, de ♭6 vlak boven de 5.',
+   b:()=>[LB('aeo',9,{t:'pos',at:5},{ring:[2,8]})]},
+  {h:'Majeur: plus 4 en 7',p:'Bij majeur komen de 4 en de 7 erbij. De 4 ligt één fret boven de 3, de 7 één fret onder de grondtoon.',
+   b:()=>[LB('ion',0,{t:'pos',at:5},{ring:[5,11]})]},
+  {h:'Drie noten per snaar',p:'Hetzelfde materiaal, anders verdeeld: drie noten op elke snaar. Er bestaan maar drie grepen per snaar (2+2 frets, 2+1 of 1+2), en gelijke grepen liggen naast elkaar. Het patroon schuift langzaam op naar de brug.',
+   b:()=>[LB('aeo',9,{t:'nps',i:0})]}],
+ [{h:'Drieklank plus septiem',p:'Een septiemakkoord is de drieklank met een 7 of ♭7 erbij. Am7 is 1, ♭3, 5 en ♭7.',
+   b:()=>[LB('m7',9,{t:'pos',at:5})]},
+  {h:'Het arpeggio zit al in de box',p:'Mineur pentatonisch is het m7-arpeggio plus de 4. Laat de 4 weg en je speelt alleen akkoordtonen.',
+   b:()=>[LB('pmin',9,{t:'pos',at:5},{only:[0,3,7,10]})]},
+  {h:'Vier soorten',p:'Maj7 is 1 3 5 7. Dominant 7 is 1 3 5 ♭7. Mineur 7 is 1 ♭3 5 ♭7. m7♭5 is 1 ♭3 ♭5 ♭7. Van de ene naar de andere soort verandert telkens één noot. Hier A7: alleen de terts verschilt van Am7.',
+   b:()=>[LB('dom7',9,{t:'pos',at:5})]}],
+ [{h:'Zelfde noten, andere thuisbasis',p:'D Dorisch heeft dezelfde noten als C majeur. Het verschil is welke noot als thuis klinkt. Zo ontstaan de modi, maar zo onthoud je ze niet makkelijk.',
+   b:()=>[LB('ion',0,{t:'pos',at:5},{cap:'C majeur'}),LB('dor',2,{t:'pos',at:5},{cap:'D Dorisch'})]},
+  {h:'Vergelijk met wat je al kent',p:'Zet de modi liever op dezelfde grondtoon naast elkaar. Dorisch en Phrygisch zijn mineur met één afwijkende noot. Dorisch heeft een 6 in plaats van een ♭6. Phrygisch heeft een ♭2 in plaats van een 2.',
+   b:()=>[LB('dor',9,{t:'pos',at:5},{ring:[9],cap:'A Dorisch: de 6'}),LB('phr',9,{t:'pos',at:5},{ring:[1],cap:'A Phrygisch: de ♭2'})]},
+  {h:'De majeurfamilie',p:'Mixolydisch is majeur met een ♭7. Lydisch is majeur met een ♯4.',
+   b:()=>[LB('mix',9,{t:'pos',at:4},{ring:[10],cap:'A Mixolydisch: de ♭7'}),LB('lyd',9,{t:'pos',at:4},{ring:[6],cap:'A Lydisch: de ♯4'})]},
+  {h:'Zo werk je',p:'Speel je bekende pentatonische box, mineur of majeur. Voeg de kleurnoot toe en land erop, zodat je hem hoort. De tweede extra noot volgt vanzelf.',b:()=>[]}],
+ [{h:'Harmonisch mineur: de ♭7 wordt 7',p:'Neem de mineurladder en schuif de ♭7 één fret omhoog. Tussen ♭6 en 7 ontstaat een sprong van drie frets; die geeft de klank.',
+   b:()=>[LB('hmin',9,{t:'pos',at:5},{ring:[11]})]},
+  {h:'Phrygisch dominant: dezelfde noten vanaf de 5',p:'E Phrygisch dominant heeft dezelfde noten als A harmonisch mineur. Vanuit E gezien is het Phrygisch met een grote terts. Gebruik hem over het E-akkoord in een stuk in A mineur.',
+   b:()=>[LB('phd',4,{t:'pos',at:5},{ring:[1,4]})]}],
+ [{h:'Langs één snaar',p:'Op één snaar zie je de ladder als hele en halve stappen. Dit maakt je los van de boxen en laat zien hoe ze in elkaar overlopen.',
+   b:()=>[LB('aeo',9,{t:'str',i:3})]},
+  {h:'Landen op akkoordtonen',p:'De akkoordtonen liggen over de hele hals als een net. Waar je ook bent, er ligt een 1, ♭3 of 5 binnen twee frets.',
+   b:()=>[LB('min',9,{t:'all'})]}]
+];
+const HOW={
+ naam:'Zoek het dichtstbijzijnde anker dat je zeker weet: een open snaar, fret 5, 7 of 12, of een noot op de E- of A-snaar. Loop van daaruit. Het lopen verdwijnt vanzelf.',
+ vind:'Begin op de E- of A-snaar en volg de octaafketting: twee snaren hoger en twee frets verder, vanaf de D- en G-snaar drie frets.',
+ trap:'Zie eerst welke grondtoon het dichtst bij ligt. Herken dan de afstand als vorm. Tel niet vanaf 1 door de ladder.',
+ zoek:'Ga langs elke grondtoon in de lens en leg er steeds dezelfde intervalvorm tegenaan. Controleer de B-snaar.',
+ bouw:'Bouw in lagen. Eerst bij elke grondtoon de terts en de kwint, daarna de overige noten. Noem de trappen hardop.',
+ herken:'Kijk naar de noten rond de grondtoon. Ligt er een noot één fret boven de 1? Is de terts groot of klein? Is het een ♭7 of een 7?',
+ gnoot:'Zie de fret voor je voordat je speelt, en noem de noot hardop.',
+ gtrap:'Zie eerst de grondtoon op of naast die snaar, dan de afstand ernaartoe.',
+ gloop:'Denk bij elke noot de trap. Langzaam en gelijkmatig werkt beter dan snel.',
+ jam:'Houd de grondtoon in beeld terwijl je speelt. Kijk naar het doel voordat je erheen speelt, en laat de noot uitklinken.'
+};
+let lesI=0;
+function renderLes(){const st=STAGES[lesI];
+  $('lesBody').innerHTML=`<div class="row"><button class="btn ghost" data-go="pad">Terug naar het leerpad</button></div>
+   <div><span class="lbl">Uitleg bij stap ${ROMAN[lesI]}</span><h2 class="lesT">${st.t}</h2><p class="muted">${st.s}</p></div>
+   ${LESSONS[lesI].map((x,i)=>`<article class="les"><h3><span class="no">${i+1}</span>${x.h}</h3><p>${x.p}</p>${x.b().map(b=>`<figure class="lesb">${b.cap?`<figcaption>${b.cap}</figcaption>`:''}<div class="neck">${board(b)}</div></figure>`).join('')}</article>`).join('')}
+   <div><span class="lbl">Oefen het zo</span></div>
+   <div class="lesd">${st.dr.map((p,j)=>`<div class="lesrow"><div><b>${esc(pLabel(p))}</b><p class="muted small">${HOW[p[0]]}</p></div><button class="btn" data-lp="${j}">Start</button></div>`).join('')}</div>
+   <div class="row">${lesI>0?`<button class="btn ghost" data-ln="${lesI-1}">Vorige uitleg</button>`:''}${lesI<STAGES.length-1?`<button class="btn ghost" data-ln="${lesI+1}">Volgende uitleg</button>`:''}</div>`;
+  window.scrollTo(0,0);}
+$('lesBody').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.go)show(b.dataset.go);if(b.dataset.lp!=null)loadPreset(STAGES[lesI].dr[+b.dataset.lp]);if(b.dataset.ln!=null){lesI=+b.dataset.ln;renderLes();}});
+
+/* ================= voortgang ================= */
+function renderStat(){
+  const rows=Object.keys(store.stats).map(k=>{const a=store.stats[k],[d,fid,lt]=k.split('|');if(!DR[d])return'';
+    const acc=a.reduce((x,r)=>x+r[0],0)/a.length,ms=a.reduce((x,r)=>x+r[1],0)/a.length;
+    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+' · '+LENS[lt].toLowerCase():'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n">${(ms/1000).toFixed(1)} s</td><td class="n">${Math.round(score(k)*100)}%</td></tr>`;}).join('');
+  $('statTable').innerHTML=rows?`<table><thead><tr><th>Oefening</th><th>Materiaal</th><th>Antwoorden</th><th>Goed</th><th>Tijd</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table>`
+    :'<p class="muted">Nog niets geoefend. Kies een oefening in het leerpad; je resultaten verschijnen hier.</p>';
+  $('statConfirm').innerHTML='';}
+$('statReset').onclick=()=>{$('statConfirm').innerHTML='<span class="small">Alle resultaten op dit apparaat wissen?</span><button class="chip" id="statYes">Ja, wissen</button><button class="chip" id="statNo">Nee</button>';
+  $('statYes').onclick=()=>{store.stats={};store.err={};save();renderStat();};$('statNo').onclick=()=>{$('statConfirm').innerHTML='';};};
+
+/* ================= navigatie ================= */
+const VIEWS=['pad','hals','oef','stat'],TABS=['pad','hals','oef','stat','les'];
+function show(v){if(run.active)stopRun(false);
+  for(const k of TABS)$('v-'+k).hidden=k!==v;for(const k of VIEWS)$('t-'+k).setAttribute('aria-selected',k===v||(v==='les'&&k==='pad'));
+  if(v==='les')renderLes();
+  if(v==='pad')renderPad();if(v==='hals')renderExplore();if(v==='oef'){mode('setup');renderSetup();}if(v==='stat')renderStat();
+  saveCfg();}
+for(const k of VIEWS)$('t-'+k).onclick=()=>show(k);
+window.__hk={grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
+show('pad');
+})();
+</script>
+
+<script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
+</body></html>
