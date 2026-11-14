@@ -154,6 +154,15 @@ details.how summary{cursor:pointer;font-family:var(--f-d);font-weight:600;font-s
 .meter span{display:block;height:100%;width:0;background:var(--ok)}
 .micnote{font-family:var(--f-m);font-weight:700;color:var(--fg);min-width:3em}
 .live{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:baseline}
+#prBig{display:grid;justify-items:center;align-content:center;gap:6px;min-height:300px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+#prBig .bctx{font-family:var(--f-sc);letter-spacing:.08em;color:var(--muted);font-size:1.05rem;min-height:1.2em}
+#prBig .bmain{font-family:var(--f-d);font-size:clamp(5rem,16vw,9rem);line-height:1;color:var(--accent)}
+#prBig .bsub{font-family:var(--f-d);font-size:clamp(1.5rem,4vw,2.4rem)}
+#prBig .bsub b{font-weight:400;color:var(--accent)}
+#prBig.hit .bmain{color:var(--ok)}
+#prRun.bigboth #prBig{min-height:0;grid-template-columns:auto auto auto;justify-content:center;align-items:baseline;gap:6px 22px;padding:10px 0}
+#prRun.bigboth #prBig .bmain{font-size:clamp(3rem,8vw,4.5rem)}
+#prRun.bigonly #prPrompt,#prRun.bigboth #prPrompt{display:none}
 .live .big{font-family:var(--f-d);font-weight:700;font-size:3rem;line-height:1;min-width:2.2ch}
 .live .big.out{color:var(--bad)}
 .done{display:grid;gap:10px;justify-items:start;padding-block:10px}
@@ -186,8 +195,16 @@ html.pl body.running #prFb,html.pl body.running #prLive{grid-area:mid;align-self
 html.pl body.running #prFb:empty,html.pl body.running #prChoices:empty{display:none}
 html.pl body.running #prLive{gap:4px 14px;align-items:center}
 html.pl body.running #prLive>div{display:flex;gap:6px;align-items:baseline}
-html.pl body.running #prLive .big{font-size:1.5rem;min-width:1.6ch}
-html.pl body.running #lvStat{display:none}
+html.pl body.running #prLive .big{font-size:2.5rem;min-width:1.6ch}
+html.pl body.running #prLive .lbl{font-size:1rem}
+html.pl body.running #prLive #lvStat{display:none}
+html.pl body.running #prBig{grid-area:board;min-height:0;border:0}
+html.pl body.running #prBig .bmain{font-size:min(46vh,9rem)}
+html.pl body.running #prBig .bsub{font-size:min(11vh,2.4rem)}
+html.pl body.running #prRun.bigboth{grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"prompt mid pips" "big big big" "board board board" "ctl ctl btns"}
+html.pl body.running #prRun.bigboth #prBig{grid-area:big;padding:0}
+html.pl body.running #prRun.bigboth #prBig .bmain{font-size:min(19vh,3.6rem)}
+html.pl body.running #prRun.bigboth #prBig .bsub{font-size:min(9vh,1.6rem)}
 html.pl body.running #prBoard{grid-area:board;min-height:0;overflow:hidden;border-radius:6px}
 html.pl body.running #prBoard svg{width:100%;height:100%;min-width:0;max-height:none}
 html.pl body.running #prChoices,html.pl body.running #prMic{grid-area:ctl;align-self:center;gap:5px}
@@ -269,6 +286,7 @@ html.pl body.running .btn{font-size:.92rem}
       <div id="prRun" hidden style="display:grid;gap:8px">
         <div class="runbar"><span id="prMeta"></span><span class="pips" id="prPips"></span></div>
         <p class="prompt" id="prPrompt"></p>
+        <div id="prBig" hidden><div class="bctx" id="bigCtx"></div><div class="bmain" id="bigMain"></div><div class="bsub" id="bigSub"></div></div>
         <div class="neck" id="prBoard"></div>
         <details class="how" id="runHow"><summary>Denkstap</summary><p class="small" id="runHowT"></p></details>
         <div class="live" id="prLive" hidden>
@@ -494,7 +512,8 @@ function micUI(err){
   const m=$('micMsg');m.classList.toggle('err',!!err);
   if(err)m.textContent=window.self!==window.top?'De microfoon is geblokkeerd in deze weergave. Open de losse kopie (index.html) in Chrome om mee te spelen. Tikken op de hals werkt hier wel.'
     :err.name==='NotAllowedError'?'Toegang geweigerd. Sta de microfoon toe in de site-instellingen van je browser.':'Geen microfoon gevonden. Open de pagina via https.';
-  else m.textContent=Mic.on?'Speel losse noten en laat ze even klinken.':'Zonder microfoon: tik de noot op de hals.';}
+  else m.textContent=Mic.on?'Speel losse noten en laat ze even klinken.':'Zonder microfoon: tik de noot op de hals.';
+  if(run.active&&run.q&&!run.jam)drawQ();}
 
 /* ================= context-balk (toonsoort, materiaal, lens) ================= */
 function renderCtx(el){
@@ -574,9 +593,9 @@ const DR={
     return{type:'choice',prompt:'Welk materiaal is dit? De rode noot is de grondtoon.',win:c.L.win,hi:c.L.hi,dots:c.L.notes.map(n=>n.iv===0?nd(n,fid,'deg'):{s:n.s,f:n.f,cls:'tone'}),
       choices:g.map(k=>({l:F[k].n,ok:k===fid})),after:c.L.notes.map(n=>nd(n,fid,'deg',{ring:(F[fid].ch||[]).includes(n.iv)?'ch':null})),ek:'h'+fid,why:`${kn(c)}: ${F[fid].iv.map(iv=>deg(fid,iv)).join(' ')}`};}},
   gnoot:{n:'Speel de noot',d:'De app noemt een noot en een snaar. Speel hem.',gt:1,free:1,make(){const s=rnd(6),f=1+rnd(11),n={s,f,midi:OPEN[s]+f,iv:0};
-    return{type:'play',loose:1,prompt:`Speel <em>${NOTE[n.midi%12]}</em> op de <em>${SNAME[s]}</em>-snaar`,dots:[],seq:[n],lab:()=>({cls:'ok',label:NOTE[n.midi%12]}),ek:'n'+n.midi%12};}},
+    return{type:'play',loose:1,big:{main:NOTE[n.midi%12],sub:`op de <b>${SNAME[s]}</b>-snaar`,ctx:''},prompt:`Speel <em>${NOTE[n.midi%12]}</em> op de <em>${SNAME[s]}</em>-snaar`,dots:[],seq:[n],lab:()=>({cls:'ok',label:NOTE[n.midi%12]}),ek:'n'+n.midi%12};}},
   gtrap:{n:'Speel de trap',d:'De app noemt een trap en een snaar. Vind hem vanuit de grondtoon.',gt:1,make(){const c=qctx(run.fid),n=wpick(c.L.notes.filter(x=>x.iv!==0),x=>c.fid+x.iv);
-    return{type:'play',loose:1,prompt:`<em>${kn(c)}</em>, ${c.L.name}: speel de <em>${deg(c.fid,n.iv)}</em> op de <em>${SNAME[n.s]}</em>-snaar`,win:c.L.win,hi:c.L.hi,dots:run.hint?roots(c):[],seq:[n],lab:x=>nd(x,c.fid,'deg'),ek:c.fid+n.iv};}},
+    return{type:'play',loose:1,big:{main:deg(c.fid,n.iv),sub:`op de <b>${SNAME[n.s]}</b>-snaar`,ctx:`${kn(c)} · ${c.L.name}`,keep:run.hint},prompt:`<em>${kn(c)}</em>, ${c.L.name}: speel de <em>${deg(c.fid,n.iv)}</em> op de <em>${SNAME[n.s]}</em>-snaar`,win:c.L.win,hi:c.L.hi,dots:run.hint?roots(c):[],seq:[n],lab:x=>nd(x,c.fid,'deg'),ek:c.fid+n.iv};}},
   gloop:{n:'Loop de vorm',d:'Speel de vorm noot voor noot omhoog en weer terug. De app volgt je.',gt:1,make(){const c=qctx(run.fid,true);let up=c.L.notes.slice().sort((a,b)=>a.s-b.s||a.f-b.f);
     /* drieklanken op een snaarset: ligging voor ligging in plaats van snaar voor snaar */
     if(run.lens.t==='set'&&F[c.fid].iv.length===3){const ss=[...new Set(up.map(n=>n.s))],by=ss.map(x=>up.filter(n=>n.s===x));
@@ -623,6 +642,10 @@ function nextQ(){
   $('prChoices').innerHTML=q.type==='choice'?q.choices.map((c,i)=>`<button class="choice" data-c="${i}">${esc(c.l)}</button>`).join(''):'';
   meta();drawQ();}
 function drawQ(){const q=run.q;let dots=q.dots.slice();
+  /* gitaaroefening met de microfoon aan: de opdracht groot in beeld; de hals alleen als hij iets toont (grondtonen) of als antwoord */
+  const big=!!q.big&&Mic.on&&!(q.done&&!q.okEnd),both=big&&!!q.big.keep;
+  $('prBig').hidden=!big;$('prBoard').hidden=big&&!both;$('prRun').classList.toggle('bigonly',big&&!both);$('prRun').classList.toggle('bigboth',both);
+  if(big){$('bigCtx').textContent=q.big.ctx;$('bigMain').textContent=q.big.main;$('bigSub').innerHTML=q.big.sub;$('prBig').classList.toggle('hit',!!q.done);}
   if(q.done&&q.after)dots=q.after;
   if(q.type==='tap'){for(const n of q.targets)if(q.found.has(key(n)))dots.push(q.lab(n));else if(q.done)dots.push(Object.assign(q.lab(n),{cls:'miss'}));}
   if(q.type==='play'){dots=dots.filter(d=>!q.seq.slice(0,q.idx).some(n=>n.s===d.s&&n.f===d.f));
@@ -660,11 +683,11 @@ function heard(midi,s,f){if(!run.active)return;if(run.jam)return jamNote(midi);c
 $('prNext').onclick=nextQ;
 $('prShow').onclick=()=>finish(false,'Dit is het antwoord.');
 $('prStop').onclick=()=>stopRun(true);
-function stopRun(toSetup){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
+function stopRun(toSetup,keepMic){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();if(!keepMic)Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
 function finishRound(){const ok=run.res.filter(r=>r.ok).length,avg=run.res.reduce((a,r)=>a+r.ms,0)/run.res.length/1000;
-  stopRun(false);mode('done');$('dScore').textContent=`${ok} / ${run.res.length}`;
+  stopRun(false,true);mode('done');$('dScore').textContent=`${ok} / ${run.res.length}`;
   $('dText').textContent=`Gemiddeld ${avg.toFixed(1)} s per ${['tap','play'].includes(run.q.type)?'noot':'antwoord'}. Score voor deze oefening: ${Math.round(score(run.key)*100)}%.`;}
-$('dAgain').onclick=startRound;$('dSetup').onclick=()=>{mode('setup');renderSetup();};$('dPad').onclick=()=>show('pad');
+$('dAgain').onclick=startRound;$('dSetup').onclick=()=>{Mic.stop();mode('setup');renderSetup();};$('dPad').onclick=()=>show('pad');
 $('prStart').onclick=()=>{Au.ensure();startRound();};
 $('micBtn').onclick=()=>Mic.on?Mic.stop():Mic.start();
 $('micGate').value=ui.gate;$('micGate').oninput=e=>{ui.gate=+e.target.value;saveCfg();};
@@ -674,7 +697,7 @@ document.addEventListener('keydown',e=>{if($('v-oef').hidden||$('prRun').hidden)
   const q=run.q;if(q&&!q.done&&q.type==='choice'&&/^[1-9]$/.test(e.key)){const b=$('prChoices').children[+e.key-1];if(b)b.click();}});
 
 /* ---- jam: drone, live trap, landingsdoelen ---- */
-function startJam(){const root=cfg.root,fid=run.fid,L=getLens(fid,root,run.lens);
+function startJam(){$('prBig').hidden=true;$('prBoard').hidden=false;$('prRun').classList.remove('bigonly','bigboth');const root=cfg.root,fid=run.fid,L=getLens(fid,root,run.lens);
   run.jam={c:{root,fid,L},hits:0,inn:0,out:0,live:null,t0:performance.now()};
   $('prPrompt').innerHTML=`<em>${NOTE[root]} ${F[fid].n.toLowerCase()}</em>, ${L.name}. Zet de drone aan en speel. Land op het doel en laat de noot klinken.`;
   $('prFb').textContent='';$('prShow').hidden=true;$('prNext').hidden=true;$('lvDeg').textContent='–';meta();jamTarget();jamDraw();
@@ -861,13 +884,13 @@ $('statReset').onclick=()=>{$('statConfirm').innerHTML='<span class="small">Alle
 
 /* ================= navigatie ================= */
 const VIEWS=['pad','hals','oef','stat'],TABS=['pad','hals','oef','stat','les'];
-function show(v){if(run.active)stopRun(false);
+function show(v){if(run.active)stopRun(false);Mic.stop();
   for(const k of TABS)$('v-'+k).hidden=k!==v;for(const k of VIEWS)$('t-'+k).setAttribute('aria-selected',k===v||(v==='les'&&k==='pad'));
   if(v==='les')renderLes();
   if(v==='pad')renderPad();if(v==='hals')renderExplore();if(v==='oef'){mode('setup');renderSetup();}if(v==='stat')renderStat();
   saveCfg();}
 for(const k of VIEWS)$('t-'+k).onclick=()=>show(k);
-window.__hk={grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
+window.__hk={heard,micUI,Mic,grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
 show('pad');
 })();
 </script>
