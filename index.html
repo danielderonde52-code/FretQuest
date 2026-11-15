@@ -284,6 +284,7 @@ html.pl body.running .btn{font-size:.92rem}
           <label class="tog"><input type="checkbox" id="prHint"> Grondtonen tonen</label>
           <label class="tog"><input type="checkbox" id="prAuto"> Automatisch door bij goed</label>
         </div>
+        <div class="row" id="prRepsRow"><span class="lbl">Aantal per ronde</span><span class="row" id="prReps"></span></div>
         <div class="row"><button class="btn" id="prStart">Start</button><span class="muted small" id="prSum"></span></div>
       </div>
 
@@ -675,7 +676,9 @@ const DR={
   jam:{n:'Landen op de drone',d:'Vrij spelen over een drone. De app toont live welke trap je speelt en geeft landingsdoelen.',gt:1,jam:1}
 };
 const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${DR[d].nolens?'all':lt}`;
-const ROUND=d=>d==='bouw'||d==='gloop'?5:10;
+/* lengte van een ronde: zelf gekozen per oefening, anders 10 (5 bij de oefeningen waarin je een hele vorm bouwt of loopt) */
+const REPS=[5,10,15,20,30];
+const ROUND=d=>(ui.reps&&ui.reps[d])||(d==='bouw'||d==='gloop'?5:10);
 
 function renderSetup(){
   const grp=[['Op scherm',k=>!DR[k].gt&&!DR[k].ear],['Op gehoor',k=>DR[k].ear],['Op gitaar',k=>DR[k].gt&&!DR[k].ear]];
@@ -686,9 +689,11 @@ function renderSetup(){
   const d=DR[ui.drill];$('prRk').parentElement.hidden=!!d.free||!!d.jam;$('prRp').parentElement.hidden=!!d.free||!!d.jam||!lensCount[cfg.lens.t];
   $('prHint').parentElement.hidden=!['trap','zoek','gtrap','gloop','hspeel'].includes(ui.drill);
   $('prRp').parentElement.hidden=$('prRp').parentElement.hidden||!!d.nolens;$('prRk').nextSibling.textContent=d.ear?' Willekeurige toonsoort per ronde':' Willekeurige toonsoort';
+  $('prRepsRow').hidden=!!d.jam;$('prReps').innerHTML=REPS.map(n=>`<button class="chip k" data-reps="${n}" aria-pressed="${ROUND(ui.drill)===n}">${n}</button>`).join('');
   $('prSum').textContent=d.jam?'Geen ronde: speel zo lang je wilt.':`Ronde van ${ROUND(ui.drill)}.`+(d.ear?' Zet je geluid aan; een koptelefoon werkt het best.':'');}
 $('prEx').addEventListener('click',e=>{const b=e.target.closest('[data-ex]');if(b){ui.drill=b.dataset.ex;saveCfg();renderSetup();}});
 bindCtx($('prCtx'),renderSetup);
+$('prReps').addEventListener('click',e=>{const b=e.target.closest('[data-reps]');if(!b)return;ui.reps=ui.reps||{};ui.reps[ui.drill]=+b.dataset.reps;saveCfg();renderSetup();});
 for(const [id,k] of [['prRk','rk'],['prRp','rp'],['prHint','hint'],['prAuto','auto']])$(id).onchange=e=>{ui[k]=e.target.checked;saveCfg();};
 const PL=window.matchMedia('(orientation: landscape) and (max-height: 540px)');
 const setPL=()=>document.documentElement.classList.toggle('pl',PL.matches);setPL();if(PL.addEventListener)PL.addEventListener('change',setPL);
@@ -713,7 +718,7 @@ function startRound(){
 /* laat de vraag horen; de microfoon luistert pas weer als het voorbeeld is uitgeklonken */
 function earPlay(na){const q=run.q;if(!q||!q.play)return;const eind=Au.seq(q.play,.45,na||0);run.muteUntil=performance.now()+(eind+.9)*1000;return eind;}
 function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`<b style="color:var(--fg)">${d.n}</b>${d.free?'':' · '+esc(F[run.fid].n)+(d.nolens?'':' · '+LENS[run.lens.t])}`;
-  $('prPips').innerHTML=d.jam?'':Array.from({length:run.n},(_,i)=>`<span class="pip ${i<run.res.length?(run.res[i].ok?'ok':'no'):i===run.i?'now':''}"></span>`).join('');}
+  $('prPips').innerHTML=d.jam?'':run.n>12?`<b style="color:var(--fg);font-variant-numeric:tabular-nums">${Math.min(run.i+1,run.n)} / ${run.n}</b><span class="muted">&nbsp;· ${run.res.filter(r=>r.ok).length} goed</span>`:Array.from({length:run.n},(_,i)=>`<span class="pip ${i<run.res.length?(run.res[i].ok?'ok':'no'):i===run.i?'now':''}"></span>`).join('');}
 function nextQ(){
   clearTimeout(run.tm);if(run.i>=run.n)return finishRound();
   const q=run.q=DR[run.drill].make();q.found=new Set();q.xs=[];q.idx=0;q.done=false;run.t0=q.born=performance.now();
