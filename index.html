@@ -677,7 +677,7 @@ const DR={
 };
 const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${DR[d].nolens?'all':lt}`;
 /* lengte van een ronde: zelf gekozen per oefening, anders 10 (5 bij de oefeningen waarin je een hele vorm bouwt of loopt) */
-const REPS=[5,10,15,20,30];
+const REPS=[5,10,15,20,30,40,50];
 const ROUND=d=>(ui.reps&&ui.reps[d])||(d==='bouw'||d==='gloop'?5:10);
 
 function renderSetup(){
