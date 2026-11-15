@@ -630,9 +630,9 @@ const roots=c=>c.L.notes.filter(n=>n.iv===0).map(n=>nd(n,c.fid,'deg'));
 const DR={
   naam:{n:'Benoem de noot',d:'Eén fret licht op. Welke noot is het?',free:1,make(){const s=rnd(6),f=rnd(13),p=(OPEN[s]+f)%12;
     return{type:'choice',prompt:'Welke noot is dit?',dots:[{s,f,cls:'tone',ring:'cur'}],choices:NOTE.map((l,i)=>({l,ok:i===p})),after:[{s,f,cls:'ok',label:NOTE[p]}],ek:'n'+p};}},
-  vind:{n:'Vind de noot',d:'Tik een noot op alle zes de snaren.',free:1,make(){const p=wpick([...Array(12).keys()],x=>'n'+x),t=[];
-    for(let s=0;s<6;s++)for(let f=1;f<=12;f++)if((OPEN[s]+f)%12===p)t.push({s,f,iv:0,midi:OPEN[s]+f});
-    return{type:'tap',prompt:`Tik elke <em>${NOTE[p]}</em>, fret 1 t/m 12`,dots:[],targets:t,lab:n=>({s:n.s,f:n.f,cls:'ok',label:NOTE[p]}),ek:'n'+p,inF:(s,f)=>(OPEN[s]+f)%12===p};}},
+  vind:{n:'Vind de noot',d:'Tik een noot op elke plek van de hals. Volg de octaafketting tot het eind.',free:1,make(){const p=wpick([...Array(12).keys()],x=>'n'+x),t=[];
+    for(let s=0;s<6;s++)for(let f=0;f<=MAXF;f++)if((OPEN[s]+f)%12===p)t.push({s,f,iv:0,midi:OPEN[s]+f});   // de hele zichtbare hals, zodat de ketting nergens eerder ophoudt dan jij
+    return{type:'tap',prompt:`Tik elke <em>${NOTE[p]}</em> op de hals`,dots:[],targets:t,lab:n=>({s:n.s,f:n.f,cls:'ok',label:NOTE[p]}),ek:'n'+p,inF:(s,f)=>(OPEN[s]+f)%12===p};}},
   trap:{n:'Benoem de trap',d:'Een noot licht op. Welke trap is het ten opzichte van de grondtoon?',make(){const c=qctx(run.fid),cand=c.L.notes.filter(n=>n.iv!==0);
     const n=wpick(cand,x=>c.fid+x.iv),f=F[c.fid];
     return{type:'choice',prompt:`<em>${kn(c)}</em>, ${c.L.name}: welke trap?`,win:c.L.win,hi:c.L.hi,dots:[...(run.hint?roots(c):[]),{s:n.s,f:n.f,cls:'tone',ring:'cur'}],
@@ -716,7 +716,7 @@ function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`<b style="color:var
   $('prPips').innerHTML=d.jam?'':Array.from({length:run.n},(_,i)=>`<span class="pip ${i<run.res.length?(run.res[i].ok?'ok':'no'):i===run.i?'now':''}"></span>`).join('');}
 function nextQ(){
   clearTimeout(run.tm);if(run.i>=run.n)return finishRound();
-  const q=run.q=DR[run.drill].make();q.found=new Set();q.xs=[];q.idx=0;q.done=false;run.t0=performance.now();
+  const q=run.q=DR[run.drill].make();q.found=new Set();q.xs=[];q.idx=0;q.done=false;run.t0=q.born=performance.now();
   if(q.play){const na=run.ear.intro||.3;run.ear.intro=0;earPlay(na);run.t0+=na*1000;}
   $('prPrompt').innerHTML=q.prompt;$('prFb').textContent='';$('prFb').className='fb';$('prNext').hidden=true;$('prShow').hidden=q.type==='choice';
   $('prChoices').innerHTML=q.type==='choice'?q.choices.map((c,i)=>`<button class="choice" data-c="${i}">${esc(c.l)}</button>`).join(''):'';
@@ -744,6 +744,7 @@ $('prChoices').addEventListener('click',e=>{const b=e.target.closest('[data-c]')
   const c=q.choices[+b.dataset.c];[...$('prChoices').children].forEach((el,i)=>{el.disabled=true;if(q.choices[i].ok)el.classList.add('ok');});
   if(!c.ok)b.classList.add('no');finish(c.ok,c.ok?'':'Het was '+q.choices.find(x=>x.ok).l+'. '+(q.why||''));});
 onTap($('prBoard'),(s,f)=>{if(!run.active)return;if(run.jam)return heard(OPEN[s]+f,s,f);const q=run.q;if(!q||q.done)return;
+  if(performance.now()-q.born<450)return;   // een tik die nog bij de vorige vraag hoorde
   if(q.type==='tap'){let t=q.targets.find(n=>n.s===s&&n.f===f);
     /* dezelfde toonhoogte op een andere snaar binnen het venster telt als die noot */
     if(!t&&q.win&&f>=q.win.start&&f<=q.win.end)t=q.targets.find(n=>n.midi===OPEN[s]+f&&!q.found.has(key(n)));
@@ -949,7 +950,7 @@ const HOW={
  hvind:'Benoem eerst in je hoofd welke trap je hoort, kijk dan waar de grondtonen liggen en leg de afstand eroverheen. Raden op de hals leert je niets; de eerste tik telt.',
  hspeel:'Zing of neurie de noot eerst na. Zoek hem dan op de gitaar. In het begin mag je tastend zoeken; het doel is dat je hem in één keer pakt omdat je de trap herkent.',
  naam:'Zoek het dichtstbijzijnde anker dat je zeker weet: een open snaar, fret 5, 7 of 12, of een noot op de E- of A-snaar. Loop van daaruit. Het lopen verdwijnt vanzelf.',
- vind:'Begin op de E- of A-snaar en volg de octaafketting: twee snaren hoger en twee frets verder, vanaf de D- en G-snaar drie frets.',
+ vind:'Begin bij de laagste plek en volg de octaafketting: twee snaren hoger en twee frets verder, vanaf de D- en G-snaar drie frets. De open snaren en de frets boven 12 tellen mee.',
  trap:'Zie eerst welke grondtoon het dichtst bij ligt. Herken dan de afstand als vorm. Tel niet vanaf 1 door de ladder.',
  zoek:'Ga langs elke grondtoon in de lens en leg er steeds dezelfde intervalvorm tegenaan. Controleer de B-snaar.',
  bouw:'Bouw in lagen. Eerst bij elke grondtoon de terts en de kwint, daarna de overige noten. Noem de trappen hardop.',
