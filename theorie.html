@@ -1,0 +1,793 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FretQuest Theorie</title><meta name="theme-color" content="#121a18"><link rel="icon" href="icon-192.png">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}</style></head><body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Marcellus+SC&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a reading column with a chapter rail beside it; hairline gold rules, Roman chapter numerals that match the ten steps in the app. Same single dark look as the app. */
+:root{
+  --bg:#121a18; --surface:#18221f; --raise:#1f2b27; --fg:#ece6d6; --muted:#9aa093; --line:#3d4a40;
+  --accent:#c2a15a; --accent-fg:#14100b;
+  --c1:#e0b84f; --c3:#c77b4a; --c5:#cfd2d6; --c7:#6fa08c; --ct:#e4dcc8; --ch:#ef6f52;
+  --ok:#7ccf98; --bad:#ea6f62;
+  --wood:#1d130d; --fret:#a48a52; --string:#d2c8ae; --inlay:#3b2c20; --dot-ink:#14100b; --ghost:#6b6558;
+  --f-d:"Marcellus",Georgia,"Times New Roman",serif;
+  --f-sc:"Marcellus SC","Marcellus",Georgia,serif;
+  --f-b:"Spectral",Georgia,"Times New Roman",serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-b);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 80px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:20px}}
+a{color:var(--accent)} a:hover{color:var(--fg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{font-family:var(--f-d);font-weight:400;margin:0;line-height:1.15;text-wrap:balance}
+p{margin:0;max-width:66ch}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* rail */
+.rail{position:sticky;top:16px;display:grid;gap:14px;max-height:calc(100vh - 32px);overflow:auto;padding-right:4px}
+.brand{font-family:var(--f-sc);font-size:1.6rem;letter-spacing:.1em;line-height:1}
+.brand i{font-style:normal;color:var(--accent)}
+.brand small{display:block;font-family:var(--f-b);font-style:italic;font-size:.95rem;letter-spacing:0;color:var(--muted);margin-top:6px}
+.toc{display:grid;gap:1px;border-top:1px solid var(--line);padding-top:10px}
+.toc a{display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:6px;text-decoration:none;color:var(--muted);padding:4px 0;font-size:.98rem;line-height:1.3}
+.toc a:hover{color:var(--fg)}
+.toc a b{font-family:var(--f-d);font-weight:400;color:var(--accent);text-align:right;padding-right:6px}
+.back{font-family:var(--f-sc);letter-spacing:.08em;font-size:1rem}
+@media (max-width:900px){.rail{position:static;max-height:none}
+  .toc{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:0 18px}}
+
+/* text */
+main{display:grid;gap:56px;min-width:0}
+.lede{font-size:1.2rem;color:var(--fg)}
+.title{display:grid;gap:10px}
+.title h1{font-size:clamp(2.2rem,6vw,3.4rem);letter-spacing:.01em}
+.title .eyebrow,.lbl{font-family:var(--f-sc);letter-spacing:.08em;color:var(--accent);font-size:1rem}
+section.ch{display:grid;gap:18px;min-width:0}
+.chhead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 18px;align-items:baseline;border-top:1px solid var(--line);padding-top:18px}
+.chhead .no{font-family:var(--f-d);font-size:2.6rem;color:var(--accent);line-height:1;min-width:2.2ch}
+.chhead h2{font-size:clamp(1.7rem,4.4vw,2.3rem)}
+.chhead p{grid-column:2;font-style:italic;color:var(--muted)}
+h3{font-size:1.35rem;margin-top:14px}
+ul,ol{margin:0;padding-left:1.3em;max-width:66ch;display:grid;gap:5px}
+li::marker{color:var(--accent)}
+strong{font-weight:600;color:var(--fg)}
+.deg{font-weight:600;white-space:nowrap}
+.kern{border-left:0;border-top:1px solid var(--accent);border-bottom:1px solid var(--accent);padding:12px 0;display:grid;gap:4px}
+.kern p{max-width:70ch}
+.app{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:12px 16px;display:grid;gap:4px}
+.app p{max-width:70ch;font-size:.98rem}
+
+/* figures */
+figure{margin:0;display:grid;gap:8px;min-width:0}
+figcaption{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;font-size:.98rem;color:var(--muted);max-width:74ch}
+figcaption b{font-family:var(--f-d);font-weight:400;color:var(--fg);font-size:1.05rem}
+.play{border:1px solid var(--line);background:var(--surface);border-radius:3px;padding:3px 10px;font-family:var(--f-sc);letter-spacing:.06em;font-size:.9rem;color:var(--fg);min-height:30px}
+.play:hover{border-color:var(--accent)}
+.neck{overflow-x:auto;min-width:0;max-width:100%;-webkit-overflow-scrolling:touch;border-radius:3px}
+.neck svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.wood{fill:var(--wood)} .inlay{fill:var(--inlay)}
+.win{fill:var(--accent);fill-opacity:.13;stroke:var(--accent);stroke-opacity:.55;stroke-width:1.5}
+.wire{stroke:var(--fret);stroke-width:2.4} .nut{stroke:var(--string);stroke-width:7}
+.str{stroke:var(--string);stroke-opacity:.8}
+.fnum,.sn{fill:var(--muted);font:500 12.5px var(--f-b);text-anchor:middle} .fnum.k{fill:var(--fg);font-weight:700}
+.sn{dominant-baseline:central}
+.d{stroke:rgba(0,0,0,.5);stroke-width:1}
+.d-root{fill:var(--c1)} .d-third{fill:var(--c3)} .d-fifth{fill:var(--c5)} .d-sev{fill:var(--c7)}
+.d-tone{fill:var(--wood);stroke:var(--ct);stroke-width:2}
+.d-ghost{fill:var(--wood);stroke:var(--ghost);stroke-width:1.5}
+.dl{fill:var(--dot-ink);font:600 13.5px var(--f-b);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.dl.g{fill:var(--ghost)} .dl.m{fill:var(--ct)}
+.ring-cur{fill:none;stroke:#fff;stroke-width:3}
+.ring-ch{fill:none;stroke:var(--ch);stroke-width:2.5;stroke-dasharray:3.5 2.5}
+.tap{fill:transparent}
+.wl{fill:var(--accent);font:400 13px var(--f-d);text-anchor:middle;letter-spacing:.04em}
+.lk{stroke:var(--accent);stroke-width:3;stroke-linecap:round} .lkh{fill:var(--accent)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.98rem}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:15px;height:15px;border-radius:50%;display:inline-block;flex:none}
+.sw.o{border:2px solid var(--ct)} .sw.r{border:2px dashed var(--ch)}
+
+/* tables */
+.tw{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:.98rem;font-variant-numeric:tabular-nums;width:100%;min-width:480px}
+caption{caption-side:top;text-align:left;font-family:var(--f-sc);letter-spacing:.08em;color:var(--accent);padding-bottom:6px}
+th,td{padding:7px 12px 7px 0;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:var(--f-sc);font-weight:400;letter-spacing:.06em;color:var(--muted);font-size:.92rem}
+td.s{font-weight:600;white-space:nowrap}
+td.n{white-space:nowrap}
+dl{display:grid;grid-template-columns:minmax(120px,max-content) minmax(0,1fr);gap:8px 22px;margin:0;max-width:78ch}
+dt{font-family:var(--f-d);color:var(--accent)}
+dd{margin:0}
+@media (max-width:520px){dl{grid-template-columns:1fr;gap:2px}dd{margin-bottom:8px}}
+footer{color:var(--muted);font-size:.95rem;border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+<div class="wrap">
+<nav class="rail" aria-label="Inhoud">
+  <div class="brand">Fret<i>Quest</i><small>Theorie bij de app</small></div>
+  <a class="back" href="./">Terug naar de app</a>
+  <div class="toc">
+    <a href="#inleiding"><b>·</b><span>Zo werkt FretQuest</span></a>
+    <a href="#h1"><b>I</b><span>Noten en octaven</span></a>
+    <a href="#h2"><b>II</b><span>Intervallen en trappen</span></a>
+    <a href="#h3"><b>III</b><span>Drieklanken</span></a>
+    <a href="#h4"><b>IV</b><span>CAGED</span></a>
+    <a href="#h5"><b>V</b><span>Pentatonisch</span></a>
+    <a href="#h6"><b>VI</b><span>Majeur, mineur en toonsoorten</span></a>
+    <a href="#h7"><b>VII</b><span>Akkoorden en arpeggio’s</span></a>
+    <a href="#h8"><b>VIII</b><span>Modi</span></a>
+    <a href="#h9"><b>IX</b><span>Harmonisch mineur</span></a>
+    <a href="#h10"><b>X</b><span>De hele hals</span></a>
+    <a href="#gehoor"><b>·</b><span>Gehoor</span></a>
+    <a href="#formules"><b>·</b><span>Alle formules</span></a>
+    <a href="#woorden"><b>·</b><span>Woordenlijst</span></a>
+  </div>
+</nav>
+
+<main>
+<header class="title">
+  <span class="eyebrow">Handleiding</span>
+  <h1>De theorie achter de hals</h1>
+  <p class="lede">Alles wat FretQuest je laat oefenen, in tien hoofdstukken uitgelegd. De hoofdstukken I tot en met X horen bij de stappen I tot en met X van het leerpad in de app.</p>
+</header>
+
+<section class="ch" id="inleiding">
+  <div class="chhead"><span class="no">·</span><h2>Zo werkt FretQuest</h2><p>Het idee, de kleuren en hoe je oefent</p></div>
+  <p>De hals van een gitaar lijkt een verzameling losse vormen: boxen, akkoorden, ladders, arpeggio’s. FretQuest behandelt ze als één ding. Elke vorm bestaat uit een <strong>grondtoon</strong> en een <strong>formule</strong>: een lijstje trappen dat zegt welke noten erbij horen. A mineur pentatonisch is de grondtoon A met de formule <span class="deg">1 ♭3 4 5 ♭7</span>. Een A mineur akkoord is dezelfde grondtoon met <span class="deg">1 ♭3 5</span>.</p>
+  <p>Wie de trappen kent, hoeft geen vormen te onthouden. Je ziet een grondtoon, je weet waar de terts en de kwint liggen, en je bouwt de rest eromheen. Daarom toont de app overal cijfers in plaats van nootnamen, en heeft elke trap overal dezelfde kleur.</p>
+  <div class="legend" aria-label="Kleuren">
+    <span><i class="sw" style="background:var(--c1)"></i>goud: grondtoon (1)</span>
+    <span><i class="sw" style="background:var(--c3)"></i>koper: terts (3 of ♭3)</span>
+    <span><i class="sw" style="background:var(--c5)"></i>zilver: kwint (5)</span>
+    <span><i class="sw" style="background:var(--c7)"></i>patina: septiem (7 of ♭7)</span>
+    <span><i class="sw o"></i>open ring: overige trappen</span>
+    <span><i class="sw r"></i>stippelring: kleurnoot</span>
+  </div>
+  <figure data-fig="lees"><figcaption><b>Een diagram lezen.</b> De lage E-snaar ligt onderaan, de hoge e-snaar bovenaan. Onder de hals staan de fretnummers. Het gouden kader is de positie waarin je speelt. De cijfers zijn trappen ten opzichte van de grondtoon, hier A.</figcaption></figure>
+  <h3>De lens</h3>
+  <p>Dezelfde noten kun je op vijf manieren bekijken. De app noemt dat een lens.</p>
+  <dl>
+    <dt>Hele hals</dt><dd>Alle plekken waar de formule voorkomt. Goed voor overzicht.</dd>
+    <dt>CAGED-positie</dt><dd>Een venster van vijf frets rond één van de vijf akkoordvormen. Zo speel je zonder je hand te verplaatsen.</dd>
+    <dt>Drie noten per snaar</dt><dd>Een patroon dat schuin over de hals loopt, gemaakt voor snelle loopjes.</dd>
+    <dt>Snaarset</dt><dd>Drie naast elkaar liggende snaren. Vooral voor drieklanken.</dd>
+    <dt>Eén snaar</dt><dd>De formule als rij langs één snaar. Laat de afstanden zien.</dd>
+  </dl>
+  <h3>Drie soorten oefeningen</h3>
+  <ul>
+    <li><strong>Op scherm.</strong> Je traint het beeld van de hals: noten benoemen, trappen herkennen, een vorm uit je hoofd bouwen. Dit kan overal.</li>
+    <li><strong>Op gehoor.</strong> De app laat een toonsoort en een noot horen en jij herkent de trap. Met een koptelefoon kan dit ook overal.</li>
+    <li><strong>Op gitaar.</strong> De app luistert via de microfoon. Je speelt een noot, een trap of een hele vorm.</li>
+  </ul>
+  <h3>Zo haal je er het meeste uit</h3>
+  <ol>
+    <li>Lees het hoofdstuk hier of de korte uitleg bij de stap in de app.</li>
+    <li>Bekijk het materiaal in het tabblad Hals en speel het af.</li>
+    <li>Doe de schermoefeningen van de stap tot je 85% haalt.</li>
+    <li>Doe de gehooroefening van de stap.</li>
+    <li>Pak de gitaar voor de oefeningen op gitaar.</li>
+  </ol>
+  <p>Kort en vaak werkt beter dan lang en zelden. Tien minuten per dag levert meer op dan een uur per week. Zeg bij elke oefening de trap hardop of in gedachten: dat koppelt wat je ziet aan wat je hoort.</p>
+</section>
+
+<section class="ch" id="h1">
+  <div class="chhead"><span class="no">I</span><h2>Noten en octaven</h2><p>Elke noot op elke snaar, zonder tellen</p></div>
+  <h3>Twaalf tonen</h3>
+  <p>Westerse muziek gebruikt twaalf verschillende tonen. Daarna begint het opnieuw, een octaaf hoger. Op de gitaar is elke fret één stap in die rij. Zo’n stap heet een <strong>halve toon</strong>. Twee frets is een <strong>hele toon</strong>.</p>
+  <p>Zeven van de twaalf hebben een letter: A, B, C, D, E, F en G. Dat zijn de <strong>stamtonen</strong>. Tussen de meeste stamtonen zit een hele toon, dus twee frets. Er zijn twee uitzonderingen: van <strong>E naar F</strong> en van <strong>B naar C</strong> is het maar één fret.</p>
+  <p>De vijf tonen ertussen hebben geen eigen letter. Je benoemt ze vanaf een buurman. Een <strong>kruis</strong> (♯) verhoogt een noot met één fret, een <strong>mol</strong> (♭) verlaagt hem met één fret. De fret tussen C en D heet daarom C♯ of D♭. Het is dezelfde toon met twee namen. Welke naam je gebruikt hangt af van de toonsoort; dat komt in hoofdstuk VI.</p>
+  <figure data-fig="L0.0.0"><figcaption><b>De stamtonen op de E- en de A-snaar.</b> Leer deze twee snaren eerst uit je hoofd. Let op E–F en B–C: die liggen naast elkaar.</figcaption></figure>
+  <h3>De stemming</h3>
+  <p>De snaren zijn van laag naar hoog gestemd op E, A, D, G, B en e. Elke snaar klinkt vijf frets hoger dan de vorige. Fret 5 op de E-snaar is dus een A, dezelfde toon als de open A-snaar. Er is één uitzondering: de B-snaar klinkt maar vier frets hoger dan de G-snaar. Die ene afwijking komt in elk hoofdstuk terug, want hij verschuift elke vorm die de B-snaar oversteekt met één fret.</p>
+  <p>Fret 12 is op elke snaar weer de open snaar, een octaaf hoger. Alles wat je onder fret 12 leert, herhaalt zich erboven.</p>
+  <h3>Octaafvormen</h3>
+  <p>Je hoeft niet elke snaar apart te leren. Dezelfde noot ligt een octaaf hoger op een vaste afstand. Met twee vormen vind je vanuit de E- en de A-snaar elke noot op de andere snaren.</p>
+  <div class="pair">
+    <figure data-fig="L0.1.0"><figcaption><b>Vanaf de E- en de A-snaar:</b> twee snaren hoger, twee frets verder.</figcaption></figure>
+    <figure data-fig="L0.2.0"><figcaption><b>Vanaf de D- en de G-snaar:</b> twee snaren hoger, drie frets verder. De extra fret komt door de B-snaar.</figcaption></figure>
+  </div>
+  <figure data-fig="L0.3.0"><figcaption><b>Alle C’s op de hals.</b> Twee kettingen: E → D → B en A → G → e. De hoge e-snaar is gelijk aan de lage E-snaar.</figcaption></figure>
+  <div class="kern"><span class="lbl">Kern</span><p>Elke fret is een halve toon. E–F en B–C liggen naast elkaar. Elke snaar is vijf frets hoger dan de vorige, behalve de B-snaar: vier.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap I: Benoem de noot, Vind de noot en Speel de noot. Het doel is elke noot binnen een seconde.</p></div>
+</section>
+
+<section class="ch" id="h2">
+  <div class="chhead"><span class="no">II</span><h2>Intervallen en trappen</h2><p>De vaste afstanden vanaf een grondtoon</p></div>
+  <h3>Wat een interval is</h3>
+  <p>Een <strong>interval</strong> is de afstand tussen twee tonen, geteld in halve tonen. Op één snaar is dat gewoon het aantal frets. Elk interval heeft een eigen klank, en die klank blijft gelijk, waar je hem ook speelt.</p>
+  <div class="tw"><table id="tIntervals"><caption>De twaalf intervallen</caption></table></div>
+  <h3>Trappen</h3>
+  <p>Een <strong>trap</strong> is een interval gemeten vanaf de grondtoon van de toonsoort. De cijfers komen van de majeurladder. Die heeft zeven noten, genummerd 1 tot en met 7. Een mol voor het cijfer betekent: één fret lager dan in de majeurladder. De <span class="deg">♭3</span> ligt dus één fret onder de <span class="deg">3</span>. Een kruis betekent één fret hoger.</p>
+  <p>De majeurladder zelf heeft een vaste opbouw van hele en halve tonen: <strong>heel, heel, half, heel, heel, heel, half</strong>. Vanaf elke grondtoon levert die reeks een majeurladder op.</p>
+  <figure data-fig="majstr"><figcaption><b>C majeur langs de A-snaar.</b> Tussen 3 en 4 en tussen 7 en 1 ligt één fret, overal elders twee.</figcaption></figure>
+  <figure data-fig="L1.0.0"><figcaption><b>Alle twaalf trappen op één snaar.</b> Dit is de liniaal waar elke vorm uit volgt.</figcaption></figure>
+  <h3>Intervallen als vormen over de snaren</h3>
+  <p>Je speelt zelden langs één snaar. Daarom leer je elk interval als een vorm over twee of drie snaren. Omdat elke snaar vijf frets hoger klinkt, ligt de <span class="deg">4</span> altijd op dezelfde fret, één snaar hoger. De rest ligt daaromheen.</p>
+  <div class="pair">
+    <figure data-fig="L1.1.0"><figcaption><b>Eén snaar hoger.</b> Dezelfde fret is de 4. De 5 ligt twee frets verder: de powerchord. De 3 en ♭3 liggen er vlak onder.</figcaption></figure>
+    <figure data-fig="L1.2.0"><figcaption><b>Twee snaren hoger.</b> Het octaaf ligt twee frets verder. Recht boven de grondtoon ligt de ♭7.</figcaption></figure>
+  </div>
+  <figure data-fig="L1.3.0"><figcaption><b>Over de B-snaar.</b> Van de G- naar de B-snaar ligt alles één fret hoger. De 3 ligt nu recht boven de grondtoon en de 4 één fret verder.</figcaption></figure>
+  <h3>Van grondtoon naar doel</h3>
+  <p>Tel niet door de ladder om een trap te vinden. Werk in drie stappen. Zie eerst de dichtstbijzijnde grondtoon. Pak dan een anker dat je blind weet: de 5 of het octaaf. Het doel ligt altijd vlak bij een anker. De ♭7 ligt twee frets onder het octaaf, de 6 twee frets boven de 5, de 3 en ♭3 vlak onder de 4. Corrigeer als laatste voor de B-snaar.</p>
+  <figure data-fig="L1.4.0"><figcaption><b>De ankers.</b> De pijlen lopen van de grondtoon naar de 5 en het octaaf, en van het octaaf terug naar de ♭7.</figcaption></figure>
+  <div class="kern"><span class="lbl">Kern</span><p>Een trap is een vaste afstand vanaf de grondtoon. Leer de afstanden als vormen rond twee ankers: de kwint en het octaaf.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap II: Zoek de trap met de powerchord, Benoem de trap met alle twaalf intervallen, en Hoor de trap met 1 en 5.</p></div>
+</section>
+
+<section class="ch" id="h3">
+  <div class="chhead"><span class="no">III</span><h2>Drieklanken</h2><p>Drie noten, vier soorten, drie liggingen</p></div>
+  <h3>Opbouw</h3>
+  <p>Een <strong>drieklank</strong> is het kleinste akkoord: een grondtoon met een terts en een kwint erboven. Je bouwt hem door tertsen te stapelen. Er zijn twee soorten tertsen, de grote (4 frets) en de kleine (3 frets), en dat geeft vier drieklanken.</p>
+  <div class="tw"><table id="tTriads"><caption>De vier drieklanken</caption></table></div>
+  <p>Majeur en mineur gebruik je het meest. Het enige verschil is de terts: één fret. Die ene fret bepaalt of een akkoord helder of donker klinkt.</p>
+  <figure data-fig="L2.0.0"><figcaption><b>C majeur op de snaren G, B en e.</b> Drie noten onder drie vingers.</figcaption></figure>
+  <h3>Liggingen</h3>
+  <p>De drie noten kunnen in drie volgordes boven elkaar liggen. Dat heet een <strong>ligging</strong> of omkering. In de grondligging ligt de 1 onderaan, in de eerste omkering de 3, in de tweede omkering de 5. Het blijft hetzelfde akkoord. Langs de hals volgen de drie liggingen elkaar op en beginnen ze na twaalf frets opnieuw.</p>
+  <figure data-fig="L2.1.0"><figcaption><b>De drie liggingen van C majeur.</b> Kijk waar de grondtoon zit: onderaan, bovenaan of in het midden.</figcaption></figure>
+  <figure data-fig="L2.2.0"><figcaption><b>C mineur.</b> Alleen de terts zakt één fret. De 1 en de 5 blijven staan.</figcaption></figure>
+  <div class="pair">
+    <figure data-fig="dim"><figcaption><b>C verminderd.</b> Mineur met een verlaagde kwint.</figcaption></figure>
+    <figure data-fig="aug"><figcaption><b>C overmatig.</b> Majeur met een verhoogde kwint. Alle drie de vormen zijn gelijk.</figcaption></figure>
+  </div>
+  <h3>Waarom dit de basis is</h3>
+  <p>Elke ladder en elk groter akkoord is een drieklank met noten erbij. In een solo zijn de drie noten van de drieklank de plekken waar een frase tot rust komt. Wie de drieklank in een positie ziet, weet waar hij kan landen.</p>
+  <div class="kern"><span class="lbl">Kern</span><p>Majeur is 1 3 5, mineur 1 ♭3 5. Leer drie vormen per snaarset en verschuif alleen de terts.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap III: Benoem de trap en Bouw de vorm op een snaarset, Welke is dit, en Hoor de trap met majeur en mineur.</p></div>
+</section>
+
+<section class="ch" id="h4">
+  <div class="chhead"><span class="no">IV</span><h2>CAGED</h2><p>Vijf akkoordvormen die de hals verdelen</p></div>
+  <p>De vijf open akkoorden C, A, G, E en D zijn ook vijf <strong>vormen</strong>. Elke vorm kun je verschuiven: je wijsvinger neemt dan de plaats in van de topkam. Schuif je de E-vorm drie frets op, dan klinkt een G-akkoord. De vorm blijft, de naam van het akkoord verandert.</p>
+  <figure data-fig="L3.0.0"><figcaption><b>Het open C-akkoord.</b> De gekleurde noten grijp je. De vage stippen zijn dezelfde akkoordtonen die je in deze greep niet speelt.</figcaption></figure>
+  <h3>Eén akkoord, vijf plekken</h3>
+  <p>Elk akkoord kun je op vijf plekken grijpen, telkens met een andere vorm. De volgorde langs de hals is altijd <strong>C, A, G, E, D</strong> en begint dan opnieuw. Vandaar de naam.</p>
+  <div class="pair" data-figs="L3.1"></div>
+  <figure data-fig="L3.2.0"><figcaption><b>C majeur over de hele hals.</b> Elke greep begint waar de vorige ophoudt.</figcaption></figure>
+  <h3>Grondtonen als scharnieren</h3>
+  <p>Twee buurvormen delen altijd een grondtoon. Vanuit elke grondtoon kun je dus twee kanten op. Dat maakt de grondtonen tot je oriëntatiepunten op de hals.</p>
+  <figure data-fig="L3.3.0"><figcaption><b>Alleen de grondtonen.</b> C en A delen die op de A-snaar, A en G op de G-snaar, G en E op de E-snaren, E en D op de D-snaar, D en C op de B-snaar.</figcaption></figure>
+  <figure data-fig="L3.4.0"><figcaption><b>A mineur.</b> De vijf mineurvormen liggen op dezelfde plekken, met de ♭3 in plaats van de 3.</figcaption></figure>
+  <h3>Van greep naar positie</h3>
+  <p>Een <strong>positie</strong> is het gebied van vijf frets rond een greep. Elke ladder in de volgende hoofdstukken ligt in zo’n positie. CAGED is daarmee de kapstok voor alles wat volgt: een pentatonische box of een modus is altijd een akkoordvorm met noten eromheen.</p>
+  <div class="kern"><span class="lbl">Kern</span><p>Vijf vormen bedekken de hals in de volgorde C, A, G, E, D. Onthoud per vorm waar de grondtonen liggen.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap IV: Bouw de vorm in een positie, majeur en mineur, en Hoor en vind in een majeurpositie.</p></div>
+</section>
+
+<section class="ch" id="h5">
+  <div class="chhead"><span class="no">V</span><h2>Pentatonisch</h2><p>De drieklank plus twee noten</p></div>
+  <p><strong>Pentatonisch</strong> betekent vijf tonen. De mineur pentatonische ladder is de mineur drieklank met de <span class="deg">4</span> en de <span class="deg">♭7</span> erbij: <span class="deg">1 ♭3 4 5 ♭7</span>. Er zitten geen halve tonen in. Daardoor klinkt geen enkele noot vals over een mineurakkoord, en daarom is dit de eerste ladder voor rock, blues en metal.</p>
+  <div class="pair">
+    <figure data-fig="L4.0.0"><figcaption><b>Begin bij de drieklank.</b> Box 1 van A mineur, met alleen 1, ♭3 en 5 gekleurd.</figcaption></figure>
+    <figure data-fig="L4.1.0"><figcaption><b>Plus 4 en ♭7.</b> Op elke snaar liggen precies twee noten.</figcaption></figure>
+  </div>
+  <h3>Vijf boxen</h3>
+  <p>Over de hele hals vormt de ladder vijf boxen, één per CAGED-vorm. Elke box deelt zijn rand met de volgende. Leer ze niet als vingerpatroon maar als trappen: weet op elke snaar welke van de twee noten de akkoordtoon is.</p>
+  <figure data-fig="L4.2.0"><figcaption><b>A mineur pentatonisch over de hele hals.</b></figcaption></figure>
+  <h3>Majeur pentatonisch</h3>
+  <p>De majeur pentatonische ladder is <span class="deg">1 2 3 5 6</span>. Hij heeft dezelfde noten als de mineur pentatonische ladder drie frets lager. C majeur pentatonisch en A mineur pentatonisch zijn dus dezelfde vijf noten. Alleen de thuisbasis verschilt, en daarmee de trap van elke noot.</p>
+  <figure data-fig="L4.3.0"><figcaption><b>C majeur pentatonisch.</b> Dezelfde box als A mineur, met C als grondtoon.</figcaption></figure>
+  <h3>De bluesnoot</h3>
+  <p>Voeg aan mineur pentatonisch de <span class="deg">♭5</span> toe en je hebt de bluesladder. De ♭5 is een doorgangsnoot: je speelt eroverheen op weg naar de 4 of de 5, en blijft er niet op hangen.</p>
+  <figure data-fig="blues"><figcaption><b>A blues.</b> De omcirkelde noot is de ♭5.</figcaption></figure>
+  <div class="kern"><span class="lbl">Kern</span><p>Mineur pentatonisch is 1 ♭3 4 5 ♭7. Majeur pentatonisch is dezelfde vorm met de grondtoon drie frets hoger.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap V: Benoem, Zoek en Bouw in de vijf posities, Hoor de trap, Hoor en vind, en Landen op de drone.</p></div>
+</section>
+
+<section class="ch" id="h6">
+  <div class="chhead"><span class="no">VI</span><h2>Majeur, mineur en toonsoorten</h2><p>Pentatonisch plus nog twee noten</p></div>
+  <h3>De volledige ladders</h3>
+  <p>De ladders van zeven noten zijn de pentatonische ladders met twee noten erbij. Die twee extra noten liggen telkens één fret naast een noot die je al kent.</p>
+  <ul>
+    <li><strong>Mineur</strong> (ook: natuurlijk mineur of Aeolisch) is <span class="deg">1 2 ♭3 4 5 ♭6 ♭7</span>. Dat is mineur pentatonisch plus de 2 en de ♭6.</li>
+    <li><strong>Majeur</strong> (ook: Ionisch) is <span class="deg">1 2 3 4 5 6 7</span>. Dat is majeur pentatonisch plus de 4 en de 7.</li>
+  </ul>
+  <div class="pair">
+    <figure data-fig="L5.0.0"><figcaption><b>A mineur.</b> De omcirkelde noten zijn de 2 en de ♭6.</figcaption></figure>
+    <figure data-fig="L5.1.0"><figcaption><b>C majeur.</b> De omcirkelde noten zijn de 4 en de 7.</figcaption></figure>
+  </div>
+  <h3>Relatieve toonsoorten</h3>
+  <p>A mineur en C majeur hebben dezelfde zeven noten. Ze heten elkaars <strong>relatieve</strong> toonsoort. De grondtoon van de relatieve mineur ligt altijd drie frets onder die van de majeur. Welke van de twee je hoort, hangt af van de noot en het akkoord waar de muziek op thuiskomt.</p>
+  <h3>Drie noten per snaar</h3>
+  <p>Dezelfde ladder kun je ook verdelen in drie noten per snaar. Het patroon loopt dan schuin over de hals. Er bestaan maar drie grepen per snaar: twee keer een hele toon, een hele en een halve, of een halve en een hele. Dit patroon is gelijkmatig voor de plectrumhand en daarom geschikt voor snelheid.</p>
+  <figure data-fig="L5.2.0"><figcaption><b>A mineur, drie noten per snaar, vanaf de grondtoon.</b></figcaption></figure>
+  <h3>Toonsoorten en nootnamen</h3>
+  <p>In een ladder van zeven noten komt elke letter precies één keer voor. Dat bepaalt of je een toon met een kruis of een mol schrijft. In E majeur heet de derde noot G♯ en niet A♭, omdat de letter A al gebruikt wordt voor de vierde noot. De app volgt deze regel overal.</p>
+  <p>Het aantal kruisen of mollen noem je de <strong>voortekening</strong>. Ga je een kwint omhoog, dan komt er één kruis bij. Ga je een kwint omlaag, dan komt er één mol bij. Die reeks heet de kwintencirkel.</p>
+  <div class="tw"><table id="tKeys"><caption>De twaalf majeurtoonsoorten met hun relatieve mineur</caption></table></div>
+  <div class="kern"><span class="lbl">Kern</span><p>Mineur is pentatonisch plus 2 en ♭6, majeur is pentatonisch plus 4 en 7. Relatieve toonsoorten delen hun noten; de grondtonen liggen drie frets uit elkaar.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap VI: Bouw de vorm in posities en met drie noten per snaar, Hoor de trap in majeur en mineur, en Hoor en speel.</p></div>
+</section>
+
+<section class="ch" id="h7">
+  <div class="chhead"><span class="no">VII</span><h2>Akkoorden en arpeggio’s</h2><p>Akkoordtonen als landingsplaatsen</p></div>
+  <h3>Akkoorden in een toonsoort</h3>
+  <p>Stapel op elke noot van een ladder twee tertsen uit diezelfde ladder, en je krijgt zeven drieklanken. Dat zijn de akkoorden die bij de toonsoort horen. Je schrijft ze met Romeinse cijfers: een hoofdletter voor majeur, een kleine letter voor mineur, een rondje voor verminderd.</p>
+  <div class="tw"><table id="tDia"><caption>De akkoorden van C majeur en A mineur</caption></table></div>
+  <p>Het patroon is in elke majeurtoonsoort gelijk: majeur op I, IV en V, mineur op ii, iii en vi, verminderd op vii. Daardoor kun je bij een akkoordenschema snel zien in welke toonsoort het staat.</p>
+  <h3>Septiemakkoorden</h3>
+  <p>Stapel je nog een terts, dan krijg je een <strong>septiemakkoord</strong>: een drieklank met een 7 of ♭7 erbij. Er zijn vier soorten die in een toonsoort voorkomen. Van de ene naar de andere verandert telkens één noot.</p>
+  <div class="tw"><table id="tSevenths"><caption>De vier septiemakkoorden</caption></table></div>
+  <h3>Arpeggio’s</h3>
+  <p>Een <strong>arpeggio</strong> is een akkoord dat je noot voor noot speelt. In een solo zijn het de noten die precies bij het akkoord eronder passen. Een frase die op een akkoordtoon eindigt, klinkt af. Een frase die op een andere noot eindigt, vraagt om een vervolg.</p>
+  <div class="pair">
+    <figure data-fig="L6.0.0"><figcaption><b>Am7:</b> 1 ♭3 5 ♭7.</figcaption></figure>
+    <figure data-fig="L6.2.0"><figcaption><b>A7:</b> 1 3 5 ♭7. Alleen de terts verschilt.</figcaption></figure>
+  </div>
+  <figure data-fig="L6.1.0"><figcaption><b>Het arpeggio zit al in de box.</b> Mineur pentatonisch is het m7-arpeggio plus de 4. Laat de 4 weg en je speelt alleen akkoordtonen.</figcaption></figure>
+  <div class="pair">
+    <figure data-fig="maj7"><figcaption><b>Cmaj7:</b> 1 3 5 7.</figcaption></figure>
+    <figure data-fig="m7b5"><figcaption><b>Bm7♭5:</b> 1 ♭3 ♭5 ♭7.</figcaption></figure>
+  </div>
+  <div class="kern"><span class="lbl">Kern</span><p>Elke toonsoort heeft zeven eigen akkoorden. Een arpeggio geeft je de noten waarop een frase kan landen.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap VII: Bouw de vorm met m7 en dominant 7, Welke is dit, Loop de vorm, en Hoor de trap met m7.</p></div>
+</section>
+
+<section class="ch" id="h8">
+  <div class="chhead"><span class="no">VIII</span><h2>Modi</h2><p>Dezelfde vormen, één kleurnoot per modus</p></div>
+  <h3>Waar ze vandaan komen</h3>
+  <p>Speel de noten van C majeur, maar behandel D als thuisbasis. Je hoort een andere ladder: D Dorisch. Zo levert elke majeurladder zeven <strong>modi</strong> op, één per beginnoot. Ze hebben dezelfde noten en dus dezelfde vormen op de hals. Wat verandert is welke noot als grondtoon klinkt.</p>
+  <div class="pair">
+    <figure data-fig="L7.0.0"><figcaption><b>C majeur.</b></figcaption></figure>
+    <figure data-fig="L7.0.1"><figcaption><b>D Dorisch.</b> Dezelfde noten, D is nu de 1.</figcaption></figure>
+  </div>
+  <h3>Hoe je ze onthoudt</h3>
+  <p>Vergelijken met de moederladder legt uit waar modi vandaan komen, maar helpt weinig bij het spelen. Vergelijk ze liever op <strong>dezelfde grondtoon</strong> met wat je al kent. Elke modus is dan gewoon majeur of mineur met één afwijkende noot. Die noot heet de <strong>kleurnoot</strong>: hij maakt de modus herkenbaar.</p>
+  <div class="tw"><table id="tModes"><caption>De zeven modi</caption></table></div>
+  <div class="pair">
+    <figure data-fig="L7.1.0"><figcaption><b>A Dorisch.</b> Mineur met een 6 in plaats van een ♭6.</figcaption></figure>
+    <figure data-fig="L7.1.1"><figcaption><b>A Phrygisch.</b> Mineur met een ♭2 in plaats van een 2.</figcaption></figure>
+  </div>
+  <div class="pair">
+    <figure data-fig="L7.2.0"><figcaption><b>A Mixolydisch.</b> Majeur met een ♭7.</figcaption></figure>
+    <figure data-fig="L7.2.1"><figcaption><b>A Lydisch.</b> Majeur met een ♯4.</figcaption></figure>
+  </div>
+  <h3>Zo gebruik je een modus</h3>
+  <p>Speel de pentatonische box die je kent, mineur of majeur. Voeg de kleurnoot toe en land erop, zodat je hem hoort. De tweede extra noot volgt vanzelf. Een modus komt alleen tot zijn recht als de grondtoon duidelijk is. Oefen daarom over een drone of over één akkoord dat blijft liggen.</p>
+  <div class="kern"><span class="lbl">Kern</span><p>Een modus is geen nieuwe vorm. Het is majeur of mineur met één kleurnoot: Dorisch de 6, Phrygisch de ♭2, Lydisch de ♯4, Mixolydisch de ♭7.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap VIII: Zoek de trap op de kleurnoot, Welke is dit, Landen op de drone, en Hoor de trap in Dorisch, Phrygisch en Mixolydisch.</p></div>
+</section>
+
+<section class="ch" id="h9">
+  <div class="chhead"><span class="no">IX</span><h2>Harmonisch mineur</h2><p>En Phrygisch dominant, de klank van neoklassieke metal</p></div>
+  <h3>Waarom de 7 omhoog gaat</h3>
+  <p>In natuurlijk mineur is het akkoord op de vijfde trap mineur. In A mineur is dat Em. Dat akkoord trekt zwak terug naar Am. Verhoog je de <span class="deg">♭7</span> naar de <span class="deg">7</span>, dan wordt het akkoord majeur: E, of E7. De nieuwe noot, G♯, ligt één fret onder de grondtoon en trekt er sterk naartoe. De ladder die zo ontstaat heet <strong>harmonisch mineur</strong>: <span class="deg">1 2 ♭3 4 5 ♭6 7</span>.</p>
+  <p>Tussen de ♭6 en de 7 ontstaat een sprong van drie frets. Die sprong geeft de ladder zijn herkenbare, oosters aandoende klank.</p>
+  <figure data-fig="L8.0.0"><figcaption><b>A harmonisch mineur.</b> De omcirkelde noot is de 7. Verder is het gewoon mineur.</figcaption></figure>
+  <h3>Phrygisch dominant</h3>
+  <p>Begin je harmonisch mineur op zijn vijfde trap, dan krijg je <strong>Phrygisch dominant</strong>: <span class="deg">1 ♭2 3 4 5 ♭6 ♭7</span>. Vanuit de nieuwe grondtoon gezien is het Phrygisch met een grote terts. Je gebruikt hem over het majeurakkoord op de vijfde trap van een mineurtoonsoort: in A mineur dus E Phrygisch dominant over het E-akkoord.</p>
+  <figure data-fig="L8.1.0"><figcaption><b>E Phrygisch dominant.</b> Dezelfde noten als A harmonisch mineur. De omcirkelde noten zijn de ♭2 en de 3.</figcaption></figure>
+  <figure data-fig="hminnps"><figcaption><b>A harmonisch mineur, drie noten per snaar.</b> Let op de sprong van drie frets tussen de ♭6 en de 7.</figcaption></figure>
+  <div class="kern"><span class="lbl">Kern</span><p>Harmonisch mineur is mineur met een grote 7. Phrygisch dominant is dezelfde ladder vanaf de vijfde trap, voor over het V-akkoord.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap IX: Bouw de vorm, Benoem de trap, Loop de vorm met drie noten per snaar, en Hoor de trap in beide ladders.</p></div>
+</section>
+
+<section class="ch" id="h10">
+  <div class="chhead"><span class="no">X</span><h2>De hele hals</h2><p>Posities loslaten en verbinden</p></div>
+  <p>Vijf posities kennen is nog geen vrijheid op de hals. Die komt pas als je van de ene positie in de andere kunt lopen zonder na te denken. Er zijn drie richtingen om dat te oefenen.</p>
+  <dl>
+    <dt>Verticaal</dt><dd>Binnen één positie, van de lage naar de hoge snaren. Dit ken je uit de vorige hoofdstukken.</dd>
+    <dt>Horizontaal</dt><dd>Langs één snaar of een paar snaren. Je ziet de ladder als hele en halve stappen en steekt posities over.</dd>
+    <dt>Diagonaal</dt><dd>Met drie noten per snaar, of door op elke snaar een positie op te schuiven. Zo bestrijk je in één loop de hele hals.</dd>
+  </dl>
+  <figure data-fig="L9.0.0"><figcaption><b>A mineur langs de G-snaar.</b> De afstanden zijn dezelfde als op elke andere snaar.</figcaption></figure>
+  <figure data-fig="diag"><figcaption><b>A mineur, drie noten per snaar vanaf de ♭3.</b> Het patroon loopt van positie naar positie.</figcaption></figure>
+  <h3>Het net van akkoordtonen</h3>
+  <p>De akkoordtonen liggen over de hele hals als een net. Waar je hand ook is, er ligt een 1, ♭3 of 5 binnen twee frets. Wie dat net ziet, kan overal een frase laten landen.</p>
+  <figure data-fig="L9.1.0"><figcaption><b>De akkoordtonen van A mineur.</b></figcaption></figure>
+  <h3>Van kennis naar muziek</h3>
+  <ul>
+    <li>Kies één toonsoort en blijf daar een week in.</li>
+    <li>Zet een drone of een akkoordenloop aan en speel korte frases van drie tot vijf noten.</li>
+    <li>Laat elke frase eindigen op een trap die je vooraf kiest. Begin met 1, 3 en 5.</li>
+    <li>Verplaats dezelfde frase naar de volgende positie.</li>
+  </ul>
+  <div class="kern"><span class="lbl">Kern</span><p>Oefen in drie richtingen en kijk naar het net van akkoordtonen. De posities worden dan één kaart.</p></div>
+  <div class="app"><span class="lbl">In de app</span><p>Stap X: Zoek de trap over de hele hals, Benoem de trap langs één snaar, Landen op de drone, en Hoor de trap met alle twaalf intervallen.</p></div>
+</section>
+
+<section class="ch" id="gehoor">
+  <div class="chhead"><span class="no">·</span><h2>Gehoor</h2><p>Horen wat een trap doet</p></div>
+  <p>De hals kennen heeft pas zin als je vooraf hoort wat je gaat spelen. Daarvoor train je je gehoor op dezelfde manier als je ogen: op trappen ten opzichte van een grondtoon. Een <span class="deg">♭3</span> klinkt in elke toonsoort als een ♭3. Die klank leer je herkennen, zoals je een kleur herkent.</p>
+  <h3>Rust en spanning</h3>
+  <p>Elke trap heeft een eigen karakter binnen de toonsoort. Sommige rusten, andere willen ergens heen. Luister daar naar in plaats van afstanden te tellen.</p>
+  <div class="tw"><table id="tEar"><caption>Hoe de trappen klinken boven een grondtoon</caption></table></div>
+  <h3>Zo oefen je</h3>
+  <ol>
+    <li>Luister naar de toonsoort tot je de grondtoon kunt neuriën.</li>
+    <li>Hoor de noot en vraag je af: rust hij, of wil hij ergens heen?</li>
+    <li>Zing in gedachten vanaf de noot terug naar de grondtoon. Het aantal stappen vertelt de trap.</li>
+    <li>Controleer met de knop Grondtoon.</li>
+  </ol>
+  <p>Begin met 1 en 5, dan de drieklank, dan pentatonisch. Elke nieuwe trap leer je door hem naast een trap te zetten die je al herkent.</p>
+  <div class="app"><span class="lbl">In de app</span><p>Hoor de trap en Hoor en vind werken zonder gitaar. Hoor en speel gebruikt de microfoon. Op het leerpad staat elke dag een kaart Op gehoor klaar.</p></div>
+</section>
+
+<section class="ch" id="formules">
+  <div class="chhead"><span class="no">·</span><h2>Alle formules</h2><p>Elk materiaal in de app, met de noten vanaf A</p></div>
+  <div class="tw"><table id="tAll"></table></div>
+</section>
+
+<section class="ch" id="woorden">
+  <div class="chhead"><span class="no">·</span><h2>Woordenlijst</h2><p>De termen die de app gebruikt</p></div>
+  <dl>
+    <dt>Akkoordtoon</dt><dd>Een noot die in het akkoord zit: meestal de 1, de terts en de kwint.</dd>
+    <dt>Arpeggio</dt><dd>Een akkoord, noot voor noot gespeeld.</dd>
+    <dt>Box</dt><dd>Een pentatonische ladder binnen één positie.</dd>
+    <dt>CAGED</dt><dd>De vijf verschuifbare akkoordvormen C, A, G, E en D.</dd>
+    <dt>Drone</dt><dd>Een doorklinkende grondtoon waarboven je speelt of luistert.</dd>
+    <dt>Formule</dt><dd>De trappen waaruit een ladder of akkoord bestaat.</dd>
+    <dt>Grondtoon</dt><dd>De noot waar een ladder of akkoord naar genoemd is. Trap 1.</dd>
+    <dt>Halve toon</dt><dd>Eén fret. Een hele toon is twee frets.</dd>
+    <dt>Interval</dt><dd>De afstand tussen twee tonen.</dd>
+    <dt>Kleurnoot</dt><dd>De noot die een modus onderscheidt van gewoon majeur of mineur.</dd>
+    <dt>Kruis en mol</dt><dd>♯ verhoogt een noot met één fret, ♭ verlaagt hem met één fret.</dd>
+    <dt>Kwint</dt><dd>Trap 5, zeven frets boven de grondtoon.</dd>
+    <dt>Lens</dt><dd>De manier waarop de app het materiaal toont: hele hals, positie, drie noten per snaar, snaarset of één snaar.</dd>
+    <dt>Ligging</dt><dd>De volgorde waarin de noten van een akkoord boven elkaar liggen. Ook: omkering.</dd>
+    <dt>Modus</dt><dd>Een ladder met dezelfde noten als een majeurladder, maar met een andere grondtoon.</dd>
+    <dt>Positie</dt><dd>Een gebied van vijf frets rond een CAGED-vorm.</dd>
+    <dt>Relatieve toonsoort</dt><dd>De majeur- en mineurtoonsoort die dezelfde noten delen.</dd>
+    <dt>Septiem</dt><dd>Trap 7 of ♭7.</dd>
+    <dt>Stamtoon</dt><dd>Een noot met een eigen letter, zonder kruis of mol.</dd>
+    <dt>Terts</dt><dd>Trap 3 (groot) of ♭3 (klein). Bepaalt of een akkoord majeur of mineur is.</dd>
+    <dt>Trap</dt><dd>Een noot benoemd naar zijn afstand tot de grondtoon: 1, ♭3, 5 enzovoort.</dd>
+  </dl>
+</section>
+
+<footer>FretQuest. Alle diagrammen en tabellen worden berekend uit dezelfde formules als de app.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const mod=(n,m=12)=>((n%m)+m)%m, rnd=n=>Math.floor(Math.random()*n), pick=a=>a[rnd(a.length)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ================= theorie ================= */
+const NOTE=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+const OPEN=[40,45,50,55,59,64];            // snaar 0 = lage E
+const SNAME=['E','A','D','G','B','e'];
+const MAXF=15;
+const DEGN=['1','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7'];
+const GROUPS={int:'Intervallen',tri:'Drieklanken',arp:'Arpeggio’s',pent:'Pentatonisch',mode:'Ladders en modi',metal:'Metal-kleuren'};
+/* par = afstand van de grondtoon naar de grondtoon van de verwante majeurladder; die bepaalt waar de vijf posities liggen */
+const F={
+  pow:{g:'int',n:'Powerchord (1–5)',iv:[0,7],par:0},
+  chr:{g:'int',n:'Alle 12 intervallen',iv:[0,1,2,3,4,5,6,7,8,9,10,11],par:0},
+  maj:{g:'tri',n:'Majeur drieklank',iv:[0,4,7],par:0},
+  min:{g:'tri',n:'Mineur drieklank',iv:[0,3,7],par:3},
+  dim:{g:'tri',n:'Verminderde drieklank',iv:[0,3,6],par:1},
+  aug:{g:'tri',n:'Overmatige drieklank',iv:[0,4,8],par:0,lab:{8:'♯5'}},
+  maj7:{g:'arp',n:'Maj7-arpeggio',iv:[0,4,7,11],par:0},
+  dom7:{g:'arp',n:'Dominant-7-arpeggio',iv:[0,4,7,10],par:5},
+  m7:{g:'arp',n:'Mineur-7-arpeggio',iv:[0,3,7,10],par:3},
+  m7b5:{g:'arp',n:'m7♭5-arpeggio',iv:[0,3,6,10],par:1},
+  pmin:{g:'pent',n:'Mineur pentatonisch',iv:[0,3,5,7,10],par:3},
+  pmaj:{g:'pent',n:'Majeur pentatonisch',iv:[0,2,4,7,9],par:0},
+  blues:{g:'pent',n:'Bluesladder',iv:[0,3,5,6,7,10],par:3,ch:[6],tip:'Mineur pentatonisch met de ♭5 als doorgangsnoot.'},
+  ion:{g:'mode',n:'Majeur (Ionisch)',iv:[0,2,4,5,7,9,11],par:0,ch:[5,11],tip:'Majeur pentatonisch plus 4 en 7.'},
+  dor:{g:'mode',n:'Dorisch',iv:[0,2,3,5,7,9,10],par:10,ch:[9],tip:'Mineur met een grote 6. Mineur pentatonisch plus 2 en 6.'},
+  phr:{g:'mode',n:'Phrygisch',iv:[0,1,3,5,7,8,10],par:8,ch:[1],tip:'Mineur met een ♭2, een halve toon boven de grondtoon. Donker en dreigend.'},
+  lyd:{g:'mode',n:'Lydisch',iv:[0,2,4,6,7,9,11],par:7,ch:[6],lab:{6:'♯4'},tip:'Majeur met een ♯4. Majeur pentatonisch plus ♯4 en 7.'},
+  mix:{g:'mode',n:'Mixolydisch',iv:[0,2,4,5,7,9,10],par:5,ch:[10],tip:'Majeur met een ♭7. De klank van bluesrock en hardrock-riffs.'},
+  aeo:{g:'mode',n:'Mineur (Aeolisch)',iv:[0,2,3,5,7,8,10],par:3,ch:[8],tip:'Mineur pentatonisch plus 2 en ♭6.'},
+  loc:{g:'mode',n:'Locrisch',iv:[0,1,3,5,6,8,10],par:1,ch:[1,6],tip:'Mineur met ♭2 en ♭5. Instabiel, weinig als toonsoort gebruikt.'},
+  hmin:{g:'metal',n:'Harmonisch mineur',iv:[0,2,3,5,7,8,11],par:3,ch:[11],tip:'Mineur met een grote 7. Het gat van ♭6 naar 7 geeft de neoklassieke klank.'},
+  phd:{g:'metal',n:'Phrygisch dominant',iv:[0,1,4,5,7,8,10],par:8,ch:[1,4],tip:'Phrygisch met een grote terts. De vijfde modus van harmonisch mineur.'}
+};
+const deg=(fid,iv)=>(F[fid].lab&&F[fid].lab[iv])||DEGN[iv];
+function ivClass(fid,iv){const a=F[fid].iv;
+  if(iv===0)return'root'; if(iv===3||iv===4)return'third';
+  if(iv===7||((iv===6||iv===8)&&!a.includes(7)))return'fifth';
+  if(iv===10||iv===11)return'sev'; return'tone';}
+const isMinor=fid=>F[fid].iv.includes(3)&&!F[fid].iv.includes(4);
+const chordSet=fid=>F[fid].iv.filter(iv=>['root','third','fifth'].includes(ivClass(fid,iv)));
+const pentSet=fid=>{const p=isMinor(fid)?[0,3,5,7,10]:[0,2,4,7,9];return F[fid].iv.filter(iv=>p.includes(iv)||chordSet(fid).includes(iv));};
+const mk=(s,f,root)=>({s,f,iv:mod(OPEN[s]+f-root),midi:OPEN[s]+f});
+const key=n=>n.s+':'+n.f;
+
+/* De vijf posities: vensters van vijf frets, geplaatst op de verwante majeurladder. Binnen zo'n venster komt elke toonhoogte precies één keer voor. */
+function posLos(fid,root){const b=mod(root+F[fid].par-4);return[-3,-1,1,4,6].map(o=>mod(b+o)).sort((a,b)=>a-b);}
+function shapeName(notes,fid){
+  if(F[fid].iv.includes(6)&&!F[fid].iv.includes(7))return'';   // verminderde kwint: geen gangbare CAGED-naam
+  const r=new Set(notes.filter(n=>n.iv===0).map(n=>n.s)),h=s=>r.has(s);
+  const L=h(0)&&h(2)?'E':h(2)&&h(4)?'D':h(1)&&h(4)?'C':h(1)&&h(3)?'A':h(0)&&h(3)?'G':h(5)&&h(2)?'E':h(5)&&h(3)?'G':'';
+  return L?L+(isMinor(fid)?'m':'')+'-vorm':'';}
+function getLens(fid,root,lens){
+  const f=F[fid],set=new Set(f.iv);let notes=[],win=null,name='hele hals';
+  const add=(s,fr)=>{const n=mk(s,fr,root);if(set.has(n.iv))notes.push(n);};
+  if(lens.t==='pos'){const lo=posLos(fid,root)[lens.i||0];win={start:lo,end:lo+4};
+    for(let s=0;s<6;s++)for(let fr=lo;fr<=lo+4;fr++){if(s===3&&fr===lo+4)continue;add(s,fr);}
+    const sn=shapeName(notes,fid);name='positie '+((lens.i||0)+1)+(sn?' · '+sn:'');}
+  else if(lens.t==='nps'&&f.iv.length===7){const k=lens.i||0,pc=mod(root+f.iv[k]);const build=st=>{let m=st;const seq=[];while(seq.length<18){if(set.has(mod(m-root)))seq.push(m);m++;}return seq.map((p,j)=>mk(Math.floor(j/3),p-OPEN[Math.floor(j/3)],root));};
+    notes=build(40+mod(pc-4));if(notes.some(n=>n.f<0))notes=build(52+mod(pc-4));
+    const fs=notes.map(n=>n.f);win={start:Math.min(...fs),end:Math.max(...fs)};name='3 per snaar vanaf '+deg(fid,f.iv[k]);}
+  else if(lens.t==='set'){const a=lens.i||0;for(let s=a;s<a+3;s++)for(let fr=0;fr<=MAXF;fr++)add(s,fr);
+    /* drieklanken: alleen complete liggingen (één noot per snaar, drie verschillende trappen, binnen vier frets); losse noten aan de rand vervallen */
+    if(f.iv.length===3){const by=[0,1,2].map(k=>notes.filter(n=>n.s===a+k)),keep=new Set();
+      for(const x of by[0])for(const y of by[1])for(const z of by[2]){const fs=[x.f,y.f,z.f];
+        if(new Set([x.iv,y.iv,z.iv]).size===3&&Math.max(...fs)-Math.min(...fs)<=4)[x,y,z].forEach(n=>keep.add(key(n)));}
+      notes=notes.filter(n=>keep.has(key(n)));}name='snaren '+SNAME.slice(a,a+3).join('-');}
+  else if(lens.t==='str'){const s=lens.i||0;for(let fr=0;fr<=MAXF;fr++)add(s,fr);name=SNAME[s]+'-snaar';}
+  else{for(let s=0;s<6;s++)for(let fr=0;fr<=MAXF;fr++)add(s,fr);}
+  return{notes,win,name,hi:Math.max(MAXF,...notes.map(n=>n.f+1))};}
+const LENS={all:'Hele hals',pos:'CAGED-positie',nps:'3 noten per snaar',set:'Snaarset',str:'Eén snaar'};
+const lensCount={all:0,pos:5,nps:7,set:4,str:6};
+
+/* ================= hals tekenen ================= */
+function board(o){
+  const lo=o.lo||0,hi=o.hi||MAXF,FW=54,OW=38,RH=33,T=o.wins?30:12,L=22;const cols=[];let x=L;
+  if(lo===0){cols.push({f:0,x0:x,x1:x+OW});x+=OW;}
+  for(let f=Math.max(1,lo);f<=hi;f++){cols.push({f,x0:x,x1:x+FW});x+=FW;}
+  const W=x+8,H=T+RH*6+22,y=s=>T+RH*(5-s)+RH/2,col=f=>cols[f-lo];
+  const bx0=lo===0?cols[0].x1:cols[0].x0,bx1=cols[cols.length-1].x1;
+  let g=`<rect class="wood" x="${bx0}" y="${T}" width="${bx1-bx0}" height="${RH*6}" rx="3"/>`;
+  for(const c of cols){const cx=(c.x0+c.x1)/2;
+    const dia=cy=>`<path class="inlay" d="M${cx-6} ${cy}L${cx} ${cy-8}L${cx+6} ${cy}L${cx} ${cy+8}Z"/>`;
+    if([3,5,7,9,15,17,19].includes(c.f))g+=dia(T+RH*3);
+    if(c.f===12)g+=dia(T+RH*1.5)+dia(T+RH*4.5);
+    if(c.f>=1)g+=`<line class="wire" x1="${c.x1}" y1="${T}" x2="${c.x1}" y2="${T+RH*6}"/>`;
+    g+=`<text class="fnum${[3,5,7,9,12,15,17,19].includes(c.f)?' k':''}" x="${cx}" y="${H-5}">${c.f}</text>`;}
+  g+=`<line class="${lo===0?'nut':'wire'}" x1="${bx0}" y1="${T}" x2="${bx0}" y2="${T+RH*6}"/>`;
+  for(let s=0;s<6;s++){g+=`<line class="str" x1="${bx0}" y1="${y(s)}" x2="${bx1}" y2="${y(s)}" stroke-width="${(2.7-s*.34).toFixed(2)}"/>`;
+    g+=`<text class="sn" x="${L/2}" y="${y(s)}">${SNAME[s]}</text>`;}
+  if(o.win){const a=col(Math.max(o.win.start,lo)),b=col(Math.min(o.win.end,hi));if(a&&b)g+=`<rect class="win" x="${a.x0+2}" y="${T-7}" width="${b.x1-a.x0-4}" height="${RH*6+14}" rx="8"/>`;}
+  (o.wins||[]).forEach((w,i)=>{const a=col(Math.max(w.start,lo)),b=col(Math.min(w.end,hi));if(!a||!b)return;
+    g+=`<rect class="win" x="${a.x0+3}" y="${T-7}" width="${b.x1-a.x0-6}" height="${RH*6+14}" rx="8"/><text class="wl" x="${(a.x0+b.x1)/2}" y="${T-13}">${w.label}</text>`;});
+  for(const d of o.dots||[]){const c=col(d.f);if(!c)continue;const cx=(c.x0+c.x1)/2,cy=y(d.s);
+    if(d.ring)g+=`<circle class="ring-${d.ring}" cx="${cx}" cy="${cy}" r="${d.ring==='ch'?16:17.5}"/>`;
+    g+=`<circle class="d d-${d.cls}" cx="${cx}" cy="${cy}" r="12.5"/>`;
+    if(d.label)g+=`<text class="dl${d.cls==='ghost'?' g':(d.cls==='miss'||d.cls==='tone')?' m':''}" x="${cx}" y="${cy+.5}">${d.label}</text>`;}
+  for(const k of o.links||[]){const ca=col(k.a[1]),cb=col(k.b[1]);if(!ca||!cb)continue;
+    const x1=(ca.x0+ca.x1)/2,y1=y(k.a[0]),x2=(cb.x0+cb.x1)/2,y2=y(k.b[0]),d=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/d,uy=(y2-y1)/d,ex=x2-ux*16,ey=y2-uy*16;
+    g+=`<line class="lk" x1="${x1+ux*15}" y1="${y1+uy*15}" x2="${ex}" y2="${ey}"/><path class="lkh" d="M${ex+ux*3} ${ey+uy*3}L${ex-ux*8-uy*5} ${ey-uy*8+ux*5}L${ex-ux*8+uy*5} ${ey-uy*8-ux*5}Z"/>`;}
+  for(const m of o.xs||[]){const c=col(m.f);if(!c)continue;const cx=(c.x0+c.x1)/2,cy=y(m.s);
+    g+=`<path class="xm" d="M${cx-8} ${cy-8}L${cx+8} ${cy+8}M${cx+8} ${cy-8}L${cx-8} ${cy+8}"/>`;}
+  for(const c of cols)for(let s=0;s<6;s++)g+=`<rect class="tap" data-s="${s}" data-f="${c.f}" x="${c.x0}" y="${y(s)-RH/2}" width="${c.x1-c.x0}" height="${RH}"/>`;
+  return`<svg viewBox="0 0 ${W} ${H}"${o.fit?` style="max-width:${W}px;min-width:${Math.min(W,300)}px"`:''} role="img" aria-label="Gitaarhals, fret ${lo} tot ${hi}">${g}</svg>`;}
+function onTap(el,fn){el.addEventListener('click',e=>{const t=e.target.closest('.tap');if(t)fn(+t.dataset.s,+t.dataset.f);});}
+/* Nootnamen per toonsoort: elke trap krijgt zijn eigen letter (de 3 van E is G♯, niet A♭). De grondtoon krijgt de naam
+   die de minste kruisen en mollen oplevert. Noten buiten de formule volgen de richting van de toonsoort. */
+const LPC=[0,2,4,5,7,9,11],LET='CDEFGAB',ACC={'-1':'♭','0':'','1':'♯'};
+const SHARP=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],FLAT=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const spellCache={};
+function spell(fid,root){const k=fid+':'+root;if(spellCache[k])return spellCache[k];
+  let best=null;
+  for(let L=0;L<7;L++){const ra=mod(root-LPC[L]+6)-6;if(Math.abs(ra)>1)continue;
+    const m={};let cost=0,dir=0;
+    for(const iv of F[fid].iv){const d=parseInt(deg(fid,iv).replace(/[^0-9]/g,''),10)-1,l=(L+d)%7,pc=mod(root+iv),a=mod(pc-LPC[l]+6)-6;
+      if(Math.abs(a)>1){cost+=10;continue;}m[pc]=LET[l]+ACC[a];cost+=Math.abs(a);dir+=a;}
+    if(LET[L]+ACC[ra]===NOTE[root])cost-=0.5;
+    if(!best||cost<best.cost)best={cost,m,dir};}
+  const fb=best.dir>0?SHARP:best.dir<0?FLAT:NOTE;
+  for(let pc=0;pc<12;pc++)if(!best.m[pc])best.m[pc]=fb[pc];
+  return spellCache[k]=best.m;}
+const nn=(pc,fid,root)=>spell(fid,root)[mod(pc)];
+const rn=(root,fid)=>nn(root,fid,root);
+function nd(n,fid,lab,extra){return Object.assign({s:n.s,f:n.f,cls:ivClass(fid,n.iv),label:lab==='deg'?deg(fid,n.iv):lab==='note'?nn(n.midi,fid,n.midi-n.iv):''},extra||{});}
+
+/* ================= geluid ================= */
+/* Getokkelde snaar: per noot één keer uitgerekend (boventonen die elk in hun eigen tempo uitsterven) en daarna bewaard.
+   Alles wordt in de app zelf opgewekt, dus het werkt ook zonder internet. */
+const Au={ctx:null,dr:null,drRoot:null,bufs:{},live:new Set(),
+  ensure(){if(!this.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;this.ctx=new C();
+      this.out=this.ctx.createGain();this.out.gain.value=.9;this.out.connect(this.ctx.destination);}
+    if(this.ctx.state==='suspended')this.ctx.resume();
+    if(!this.warm){this.warm=1;/* de noten vast klaarzetten op rustige momenten, zodat de eerste keer afspelen niet hapert */
+      let m=40;const step=()=>{if(m>88)return;this.buf(m++);(window.requestIdleCallback||setTimeout)(step,{timeout:400});};setTimeout(step,300);}
+    return this.ctx;},
+  buf(midi){if(this.bufs[midi])return this.bufs[midi];
+    const sr=24000,f0=440*Math.pow(2,(midi-69)/12),T=Math.max(.9,Math.min(2.4,2.5-(midi-40)*.028)),N=Math.round(sr*(T+.5)),b=this.ctx.createBuffer(1,N,sr),d=b.getChannelData(0);
+    let peak=0;
+    for(let k=1;k<=24;k++){const f=k*f0*Math.sqrt(1+.00002*k*k);if(f>5200)break;
+      const a=Math.abs(Math.sin(Math.PI*k*.19))/Math.pow(k,1.15);if(a<.004)continue;
+      const tau=T/(1+.42*(k-1)),w=2*Math.PI*f/sr,dec=Math.exp(-1/(tau*sr));let env=a,y1=0,y2=-Math.sin(w);const c2=2*Math.cos(w);
+      const stop=a*.0008;for(let n=0;n<N&&env>stop;n++){const y=c2*y1-y2;y2=y1;y1=y;d[n]+=y*env;env*=dec;}}
+    const att=Math.round(sr*.004),rel=Math.round(sr*.08);
+    for(let n=0;n<N;n++){if(n<att)d[n]*=n/att;if(n>N-rel)d[n]*=(N-n)/rel;const v=Math.abs(d[n]);if(v>peak)peak=v;}
+    for(let n=0;n<N;n++)d[n]*=.55/peak;
+    return this.bufs[midi]=b;},
+  /* speel één noot, 'na' seconden vanaf nu */
+  note(midi,na,gain){const c=this.ensure();if(!c)return;const src=c.createBufferSource(),g=c.createGain();src.buffer=this.buf(midi);g.gain.value=gain==null?.8:gain;
+    src.connect(g);g.connect(this.out);src.start(c.currentTime+(na||0));this.live.add(src);src.onended=()=>this.live.delete(src);},
+  pluck(midi){this.note(midi,0);},
+  seq(midis,stap,na){midis.forEach((m,i)=>this.note(m,(na||0)+i*(stap||.26)));return (na||0)+midis.length*(stap||.26);},
+  /* de toonsoort neerzetten: het akkoord van het materiaal, als een rustige aanslag */
+  chord(root,fid,na){const T=60+mod(root),cs=chordSet(fid),th=cs.filter(v=>v===3||v===4),fi=cs.find(v=>v>=6&&v<=8)||7;
+    const ms=[T-12,T-12+fi,T].concat(th.length===1?[T+th[0]]:[],[T+fi]);ms.forEach((m,i)=>this.note(m,(na||0)+i*.045,.5));},
+  hush(){this.live.forEach(x=>{try{x.stop();}catch(e){}});this.live.clear();},
+  /* drone: grondtoon, kwint en octaaf. hoog=true legt hem in het middenregister, zodat hij ook op een telefoonspeaker hoorbaar is. */
+  drone(root,hoog,vol){this.stopDrone();const c=this.ensure();if(!c)return;const g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hoog?900:700;
+    g.gain.value=.0001;g.gain.exponentialRampToValueAtTime(vol||(hoog?.05:.11),c.currentTime+.6);lp.connect(g);g.connect(this.out);
+    const base=hoog?48+mod(root):40+mod(root-4),os=[base,base+7,base+12].map((m,i)=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(m-69)/12);o.detune.value=i*4-4;o.connect(lp);o.start();return o;});
+    this.dr={g,os};this.drRoot=root;},
+  stopDrone(){if(!this.dr)return;const d=this.dr;this.dr=null;this.drRoot=null;try{d.g.gain.exponentialRampToValueAtTime(.0001,this.ctx.currentTime+.2);d.os.forEach(o=>o.stop(this.ctx.currentTime+.25));}catch(e){}}
+};
+
+/* ================= uitleg: het denkmodel per stap ================= */
+const P=(s,f,label,cls,ring)=>({s,f,label,cls:cls||'tone',ring});
+const posAt=(fid,root,lo)=>{const a=posLos(fid,root);let bi=0;a.forEach((v,i)=>{if(Math.abs(v-lo)<Math.abs(a[bi]-lo))bi=i;});return bi;};
+/* een lens als diagram; only = alleen deze trappen gekleurd, ring = deze trappen omcirkeld */
+function LB(fid,root,lens,o){o=o||{};if(lens.t==='pos'&&lens.at!=null)lens={t:'pos',i:posAt(fid,root,lens.at)};
+  const L=getLens(fid,root,lens),crop=!!L.win;
+  return{fit:1,lo:crop?Math.max(0,L.win.start-1):0,hi:crop?L.win.end+1:L.hi,win:L.win,cap:o.cap,
+    dots:L.notes.map(n=>o.only&&!o.only.includes(n.iv)?nd(n,fid,'deg',{cls:'ghost'}):nd(n,fid,o.lab||'deg',{ring:o.ring&&o.ring.includes(n.iv)?'ch':null}))};}
+const NAT=[0,2,4,5,7,9,11];
+/* de vijf akkoordgrepen zoals je ze open speelt, per snaar E A D G B e (null = snaar niet gespeeld) */
+const GRIP={maj:{C:[null,3,2,0,1,0],A:[null,0,2,2,2,0],G:[3,2,0,0,0,3],E:[0,2,2,1,0,0],D:[null,null,0,2,3,2]},
+  min:{C:[null,3,1,0,1,null],A:[null,0,2,2,1,0],G:[3,1,0,0,3,3],E:[0,2,2,0,0,0],D:[null,null,0,2,3,1]}};
+const ANCH={C:[1,3],A:[1,0],G:[0,3],E:[0,0],D:[2,0]};   // snaar en fret van de laagste grondtoon in de open greep
+function grip(q,L,root,up){const n=mod(root-OPEN[ANCH[L][0]]-ANCH[L][1])+(up?12:0),notes=[];
+  GRIP[q][L].forEach((o,s)=>{if(o!=null)notes.push(mk(s,n+o,root));});return{n,notes,end:Math.max(...notes.map(x=>x.f))};}
+/* diagram met een of meer grepen; de overige akkoordtonen blijven vaag zichtbaar */
+function GB(q,root,list,o){o=o||{};const gs=list.map(x=>Object.assign(grip(q,x[0],root,x[1]),{L:x[0]})).filter(g=>g.end<=MAXF),one=gs.length===1;
+  const lo=one?Math.max(0,gs[0].n-1):0,hi=one?gs[0].end+1:MAXF,seen=new Set(),dots=[];
+  for(const g of gs)for(const n of g.notes){if(seen.has(key(n)))continue;seen.add(key(n));dots.push(o.only&&!o.only.includes(n.iv)?nd(n,q,'deg',{cls:'ghost'}):nd(n,q,'deg'));}
+  for(const n of getLens(q,root,{t:'all'}).notes)if(!seen.has(key(n))&&n.f>=lo&&n.f<=hi)dots.unshift(nd(n,q,'',{cls:'ghost'}));
+  return{fit:1,lo,hi,dots,wins:gs.map(g=>({start:g.n,end:g.end,label:g.L+(q==='min'?'m':'')})),cap:o.cap};}
+const cagedOrder=(q,root)=>['C','A','G','E','D'].map(L=>[L,grip(q,L,root).n]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+const LESSONS=[
+ [{h:'Begin met twee snaren',p:'Leer eerst alleen de E- en de A-snaar uit je hoofd. Alle stamtonen liggen twee frets uit elkaar, behalve E–F en B–C: die liggen naast elkaar. Fret 12 is weer de open snaar. De kruisen en mollen zijn de frets ertussen.',
+   b:()=>[{fit:1,hi:12,dots:[0,1].flatMap(s=>[...Array(13).keys()].filter(f=>NAT.includes((OPEN[s]+f)%12)).map(f=>P(s,f,NOTE[(OPEN[s]+f)%12])))}]},
+  {h:'Octaaf vanaf de E- en A-snaar',p:'Dezelfde noot een octaaf hoger ligt twee snaren hoger en twee frets verder. Zo ken je via de E-snaar meteen de D-snaar, en via de A-snaar de G-snaar.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(1,3,'C','root'),P(3,5,'C','root'),P(0,3,'G','fifth'),P(2,5,'G','fifth')],links:[{a:[1,3],b:[3,5]},{a:[0,3],b:[2,5]}],cap:'+2 snaren, +2 frets'}]},
+  {h:'Octaaf vanaf de D- en G-snaar',p:'De B-snaar is een halve toon lager gestemd dan je zou verwachten. Daarom wordt de sprong hier één fret groter: twee snaren hoger en drie frets verder.',
+   b:()=>[{fit:1,lo:3,hi:9,dots:[P(2,5,'G','fifth'),P(4,8,'G','fifth'),P(3,5,'C','root'),P(5,8,'C','root')],links:[{a:[2,5],b:[4,8]},{a:[3,5],b:[5,8]}],cap:'+2 snaren, +3 frets'}]},
+  {h:'De ketting',p:'Rijg de sprongen aan elkaar en je hebt alle zes. Er zijn twee kettingen: E → D → B en A → G → e. De hoge e-snaar is gelijk aan de lage E-snaar. Wie één C weet, weet ze allemaal.',
+   b:()=>[{fit:1,hi:15,dots:[P(0,8,'C','root'),P(2,10,'C','root'),P(4,13,'C','root'),P(1,3,'C','root'),P(3,5,'C','root'),P(5,8,'C','root'),P(4,1,'C','root')],links:[{a:[0,8],b:[2,10]},{a:[2,10],b:[4,13]},{a:[1,3],b:[3,5]},{a:[3,5],b:[5,8]}]}]}],
+ [{h:'Op één snaar is een interval een aantal frets',p:'Elke fret is een halve toon. Vanaf de grondtoon: ♭3 is 3 frets, 3 is 4, 4 is 5, 5 is 7, ♭7 is 10 en het octaaf 12. Dit is de liniaal waar alle vormen uit volgen.',
+   b:()=>[{fit:1,lo:2,hi:15,dots:[...Array(13).keys()].map(i=>P(1,3+i,DEGN[i%12],ivClass('chr',i%12)))}]},
+  {h:'Eén snaar hoger',p:'De volgende snaar klinkt 5 frets hoger. Dezelfde fret op de volgende snaar is dus de 4. Daaromheen liggen de noten die je het meest nodig hebt: de 5 ligt twee frets verder (de powerchord), de 3 één fret terug, de ♭3 twee frets terug.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(0,5,'1','root'),P(1,3,'♭3','third'),P(1,4,'3','third'),P(1,5,'4'),P(1,7,'5','fifth')],links:[{a:[0,5],b:[1,7]}]}]},
+  {h:'Twee snaren hoger',p:'Twee snaren hoger ligt het octaaf twee frets verder. Recht boven de grondtoon ligt de ♭7, daartussen de 7, en één fret terug de 6.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(0,5,'1','root'),P(1,7,'5','fifth'),P(2,4,'6'),P(2,5,'♭7','sev'),P(2,6,'7','sev'),P(2,7,'1','root')],links:[{a:[0,5],b:[2,7]}]}]},
+  {h:'De B-snaar schuift alles één fret op',p:'Steek je over van de G- naar de B-snaar, dan ligt elke vorm één fret hoger dan je gewend bent. De 4 ligt niet recht erboven maar één fret verder, de 3 ligt recht erboven. Dit is de enige uitzondering op de hals.',
+   b:()=>[{fit:1,lo:3,hi:9,dots:[P(3,5,'1','root'),P(4,4,'♭3','third'),P(4,5,'3','third'),P(4,6,'4'),P(4,8,'5','fifth')],links:[{a:[3,5],b:[4,8]}]}]},
+  {h:'Zo werk je van grondtoon naar doel',p:'Tel niet door de ladder. Zie eerst de dichtstbijzijnde grondtoon. Pak dan een anker dat je blind weet: de 5 of het octaaf. Het doel ligt altijd vlak bij een anker: ♭7 is twee frets onder het octaaf, 6 is twee frets boven de 5, 3 en ♭3 liggen vlak onder de 4. Corrigeer als laatste voor de B-snaar.',
+   b:()=>[{fit:1,lo:2,hi:8,dots:[P(0,5,'1','root'),P(1,3,'♭3','third'),P(1,4,'3','third'),P(1,5,'4'),P(1,7,'5','fifth'),P(2,4,'6'),P(2,5,'♭7','sev'),P(2,7,'1','root')],links:[{a:[0,5],b:[1,7]},{a:[0,5],b:[2,7]},{a:[2,7],b:[2,5]}]}]}],
+ [{h:'Drie noten: 1, 3 en 5',p:'Een majeur drieklank is de grondtoon met de 3 en de 5 erboven. Op drie naast elkaar liggende snaren past hij onder drie vingers. Hier C majeur op de snaren G, B en e.',
+   b:()=>[{fit:1,lo:2,hi:6,dots:[P(3,5,'1','root'),P(4,5,'3','third'),P(5,3,'5','fifth')]}]},
+  {h:'Drie liggingen langs de hals',p:'Zet een andere noot onderaan en je krijgt de volgende ligging. De drie liggingen volgen elkaar op langs de hals en beginnen na 12 frets opnieuw. De plaats van de grondtoon vertelt welke ligging het is: onderaan, bovenaan of in het midden.',
+   b:()=>[{fit:1,lo:2,hi:14,dots:[P(3,5,'1','root'),P(4,5,'3','third'),P(5,3,'5','fifth'),P(3,9,'3','third'),P(4,8,'5','fifth'),P(5,8,'1','root'),P(3,12,'5','fifth'),P(4,13,'1','root'),P(5,12,'3','third')]}]},
+  {h:'Mineur: de terts één fret omlaag',p:'Verlaag in elke ligging alleen de 3 naar de ♭3. De 1 en de 5 blijven staan. Je leert dus geen zes vormen maar drie, met één beweeglijke noot.',
+   b:()=>[{fit:1,lo:2,hi:14,dots:[P(3,5,'1','root'),P(4,4,'♭3','third'),P(5,3,'5','fifth'),P(3,8,'♭3','third'),P(4,8,'5','fifth'),P(5,8,'1','root'),P(3,12,'5','fifth'),P(4,13,'1','root'),P(5,11,'♭3','third')]}]},
+  {h:'Zo werk je',p:'Zoek de grondtoon op een van de drie snaren. Staat hij op de laagste snaar, dan liggen 3 en 5 erboven. Staat hij bovenaan, dan liggen 3 en 5 eronder. Staat hij in het midden, dan ligt de 5 eronder en de 3 erboven. Op andere snaarsets zijn de vormen gelijk, op de verschuiving bij de B-snaar na.',
+   b:()=>[LB('maj',0,{t:'set',i:2})]}],
+ [{h:'Een open akkoord is een vorm',p:'Dit is het open C-akkoord zoals je het grijpt: 1, 3 en 5, verdeeld over vijf snaren. De vage stippen zijn dezelfde akkoordtonen die je in deze greep niet speelt. Onthoud waar de grondtonen zitten: bij de C-vorm op de A- en de B-snaar.',
+   b:()=>[GB('maj',0,[['C']])]},
+  {h:'De vijf grepen',p:'De vijf open akkoorden C, A, G, E en D kun je allemaal verschuiven. Je wijsvinger neemt dan de plaats in van de topkam. Hier zijn alle vijf als C-akkoord gegrepen. Je hoeft ze niet allemaal volledig te kunnen spelen; het gaat om het beeld van de vorm en de plek van de grondtonen.',
+   b:()=>cagedOrder('maj',0).map(L=>GB('maj',0,[[L]],{cap:L+'-vorm'}))},
+  {h:'Vijf vormen, één akkoord',p:'Langs de hals liggen de vijf grepen tegen elkaar aan. De volgorde is altijd C, A, G, E, D en begint dan opnieuw. Elke greep begint waar de vorige ophoudt.',
+   b:()=>[GB('maj',0,cagedOrder('maj',0).map(L=>[L]).concat([['C',1]]))]},
+  {h:'Grondtonen zijn de scharnieren',p:'Buurvormen delen een grondtoon. C en A delen die op de A-snaar, A en G die op de G-snaar, G en E die op de E-snaren, E en D die op de D-snaar, D en C die op de B-snaar. Vanaf elke grondtoon kun je dus twee kanten op.',
+   b:()=>[GB('maj',0,cagedOrder('maj',0).map(L=>[L]).concat([['C',1]]),{only:[0]})]},
+  {h:'Mineur werkt hetzelfde',p:'De vijf mineurgrepen liggen op dezelfde plekken, met de ♭3 in plaats van de 3. Hier A mineur. De Em-vorm op fret 5 is de basis van pentatonische box 1.',
+   b:()=>[GB('min',9,cagedOrder('min',9).map(L=>[L]).concat([[cagedOrder('min',9)[0],1]]))]},
+  {h:'Van greep naar positie',p:'In de oefeningen bouw je per positie alle akkoordtonen binnen vijf frets. Dat is de greep, aangevuld met de akkoordtonen die er vlak naast liggen. Zie eerst de greep, vul dan aan.',
+   b:()=>[GB('maj',0,[['E']],{cap:'De greep: E-vorm'}),LB('maj',0,{t:'pos',at:7},{cap:'De positie in de oefening'})]}],
+ [{h:'Begin bij de drieklank',p:'In box 1 van A mineur pentatonisch zit de Em-vorm van A mineur. Zie eerst alleen 1, ♭3 en 5.',
+   b:()=>[LB('pmin',9,{t:'pos',at:5},{only:[0,3,7]})]},
+  {h:'Plus twee noten: 4 en ♭7',p:'De pentatonische ladder is de drieklank met de 4 en de ♭7 erbij. Op elke snaar liggen precies twee noten. Weet je welke van de twee de akkoordtoon is, dan weet je waar je kunt landen.',
+   b:()=>[LB('pmin',9,{t:'pos',at:5})]},
+  {h:'Vijf boxen aan elkaar',p:'Elke box deelt zijn rand met de volgende: de rechterkant van box 1 is de linkerkant van box 2. Samen bedekken ze de hele hals. De grondtonen zijn je oriëntatiepunten.',
+   b:()=>[LB('pmin',9,{t:'all'})]},
+  {h:'Majeur pentatonisch: zelfde vorm, andere grondtoon',p:'C majeur pentatonisch heeft precies dezelfde noten als A mineur pentatonisch. Alleen de thuisbasis verschuift: de ♭3 van A wordt de 1 van C. Je hoeft geen nieuwe box te leren, wel de trappen opnieuw te zien.',
+   b:()=>[LB('pmaj',0,{t:'pos',at:5})]}],
+ [{h:'Mineur: plus 2 en ♭6',p:'De volledige mineurladder is de pentatonische box met twee noten erbij. Beide liggen één fret naast een noot die je al kent: de 2 vlak onder de ♭3, de ♭6 vlak boven de 5.',
+   b:()=>[LB('aeo',9,{t:'pos',at:5},{ring:[2,8]})]},
+  {h:'Majeur: plus 4 en 7',p:'Bij majeur komen de 4 en de 7 erbij. De 4 ligt één fret boven de 3, de 7 één fret onder de grondtoon.',
+   b:()=>[LB('ion',0,{t:'pos',at:5},{ring:[5,11]})]},
+  {h:'Drie noten per snaar',p:'Hetzelfde materiaal, anders verdeeld: drie noten op elke snaar. Er bestaan maar drie grepen per snaar (2+2 frets, 2+1 of 1+2), en gelijke grepen liggen naast elkaar. Het patroon schuift langzaam op naar de brug.',
+   b:()=>[LB('aeo',9,{t:'nps',i:0})]}],
+ [{h:'Drieklank plus septiem',p:'Een septiemakkoord is de drieklank met een 7 of ♭7 erbij. Am7 is 1, ♭3, 5 en ♭7.',
+   b:()=>[LB('m7',9,{t:'pos',at:5})]},
+  {h:'Het arpeggio zit al in de box',p:'Mineur pentatonisch is het m7-arpeggio plus de 4. Laat de 4 weg en je speelt alleen akkoordtonen.',
+   b:()=>[LB('pmin',9,{t:'pos',at:5},{only:[0,3,7,10]})]},
+  {h:'Vier soorten',p:'Maj7 is 1 3 5 7. Dominant 7 is 1 3 5 ♭7. Mineur 7 is 1 ♭3 5 ♭7. m7♭5 is 1 ♭3 ♭5 ♭7. Van de ene naar de andere soort verandert telkens één noot. Hier A7: alleen de terts verschilt van Am7.',
+   b:()=>[LB('dom7',9,{t:'pos',at:5})]}],
+ [{h:'Zelfde noten, andere thuisbasis',p:'D Dorisch heeft dezelfde noten als C majeur. Het verschil is welke noot als thuis klinkt. Zo ontstaan de modi, maar zo onthoud je ze niet makkelijk.',
+   b:()=>[LB('ion',0,{t:'pos',at:5},{cap:'C majeur'}),LB('dor',2,{t:'pos',at:5},{cap:'D Dorisch'})]},
+  {h:'Vergelijk met wat je al kent',p:'Zet de modi liever op dezelfde grondtoon naast elkaar. Dorisch en Phrygisch zijn mineur met één afwijkende noot. Dorisch heeft een 6 in plaats van een ♭6. Phrygisch heeft een ♭2 in plaats van een 2.',
+   b:()=>[LB('dor',9,{t:'pos',at:5},{ring:[9],cap:'A Dorisch: de 6'}),LB('phr',9,{t:'pos',at:5},{ring:[1],cap:'A Phrygisch: de ♭2'})]},
+  {h:'De majeurfamilie',p:'Mixolydisch is majeur met een ♭7. Lydisch is majeur met een ♯4.',
+   b:()=>[LB('mix',9,{t:'pos',at:4},{ring:[10],cap:'A Mixolydisch: de ♭7'}),LB('lyd',9,{t:'pos',at:4},{ring:[6],cap:'A Lydisch: de ♯4'})]},
+  {h:'Zo werk je',p:'Speel je bekende pentatonische box, mineur of majeur. Voeg de kleurnoot toe en land erop, zodat je hem hoort. De tweede extra noot volgt vanzelf.',b:()=>[]}],
+ [{h:'Harmonisch mineur: de ♭7 wordt 7',p:'Neem de mineurladder en schuif de ♭7 één fret omhoog. Tussen ♭6 en 7 ontstaat een sprong van drie frets; die geeft de klank.',
+   b:()=>[LB('hmin',9,{t:'pos',at:5},{ring:[11]})]},
+  {h:'Phrygisch dominant: dezelfde noten vanaf de 5',p:'E Phrygisch dominant heeft dezelfde noten als A harmonisch mineur. Vanuit E gezien is het Phrygisch met een grote terts. Gebruik hem over het E-akkoord in een stuk in A mineur.',
+   b:()=>[LB('phd',4,{t:'pos',at:5},{ring:[1,4]})]}],
+ [{h:'Langs één snaar',p:'Op één snaar zie je de ladder als hele en halve stappen. Dit maakt je los van de boxen en laat zien hoe ze in elkaar overlopen.',
+   b:()=>[LB('aeo',9,{t:'str',i:3})]},
+  {h:'Landen op akkoordtonen',p:'De akkoordtonen liggen over de hele hals als een net. Waar je ook bent, er ligt een 1, ♭3 of 5 binnen twee frets.',
+   b:()=>[LB('min',9,{t:'all'})]}]
+];
+
+/* ---------- figuren ---------- */
+const FIG={
+  lees:()=>LB('pmin',9,{t:'pos',at:5}),
+  majstr:()=>LB('ion',0,{t:'str',i:1}),
+  dim:()=>LB('dim',0,{t:'set',i:3}),
+  aug:()=>LB('aug',0,{t:'set',i:3}),
+  blues:()=>LB('blues',9,{t:'pos',at:5},{ring:[6]}),
+  maj7:()=>LB('maj7',0,{t:'pos',at:7}),
+  m7b5:()=>LB('m7b5',11,{t:'pos',at:7}),
+  hminnps:()=>LB('hmin',9,{t:'nps',i:0},{ring:[11]}),
+  diag:()=>LB('aeo',9,{t:'nps',i:2})
+};
+function spec(k){if(FIG[k])return FIG[k]();const m=/^L(\d+)\.(\d+)\.(\d+)$/.exec(k);return LESSONS[+m[1]][+m[2]].b()[+m[3]];}
+const SPECS={};
+function draw(fig,k){SPECS[k]=spec(k);const cap=fig.querySelector('figcaption');
+  const b=document.createElement('button');b.className='play';b.type='button';b.textContent='Speel af';b.dataset.k=k;cap.appendChild(b);
+  const d=document.createElement('div');d.className='neck';d.innerHTML=board(SPECS[k]);fig.appendChild(d);
+  /* brede halzen blijven leesbaar op een smal scherm: ze schuiven opzij in plaats van te krimpen */
+  const sv=d.querySelector('svg');sv.style.minWidth=Math.min(sv.viewBox.baseVal.width,620)+'px';}
+document.querySelectorAll('figure[data-fig]').forEach(f=>draw(f,f.dataset.fig));
+/* een les met meerdere diagrammen achter elkaar (de vijf CAGED-grepen) */
+document.querySelectorAll('[data-figs]').forEach(box=>{const m=/^L(\d+)\.(\d+)$/.exec(box.dataset.figs),bs=LESSONS[+m[1]][+m[2]].b();
+  bs.forEach((b,i)=>{const f=document.createElement('figure'),c=document.createElement('figcaption');c.innerHTML='<b>'+esc(b.cap||'')+'</b>';f.appendChild(c);box.appendChild(f);draw(f,box.dataset.figs+'.'+i);});});
+document.addEventListener('click',e=>{const b=e.target.closest('.play');if(!b)return;const bd=SPECS[b.dataset.k];Au.hush();
+  let ms=[...new Set(bd.dots.filter(d=>d.cls!=='ghost').map(d=>OPEN[d.s]+d.f))].sort((a,c)=>a-c);if(ms.length>14)ms=ms.filter(m=>m<=ms[0]+12);Au.seq(ms,.3);});
+
+/* ---------- tabellen, berekend uit dezelfde formules als de app ---------- */
+const tbl=(id,head,rows)=>{const t=document.getElementById(id),cap=t.querySelector('caption');
+  t.innerHTML=(cap?cap.outerHTML:'')+'<thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>'<td'+(i===0?' class="s"':'')+'>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';};
+const notes=(fid,root)=>F[fid].iv.map(iv=>nn(root+iv,fid,root)).join(' ');
+const degs=fid=>F[fid].iv.map(iv=>deg(fid,iv)).join(' ');
+
+const IVN=['prime','kleine secunde','grote secunde','kleine terts','grote terts','reine kwart','tritonus','reine kwint','kleine sext','grote sext','kleine septiem','grote septiem','octaaf'];
+tbl('tIntervals',['Trap','Naam','Frets','Vanaf C'],IVN.map((n,i)=>[i===12?'1 (8)':i===6?'♭5 of ♯4':DEGN[i],n,i,i===12?'C':i===6?'G♭ of F♯':nn(i,'chr',0)]));
+
+tbl('tTriads',['Soort','Formule','Opbouw','Vanaf C','Klank'],[
+  ['Majeur',degs('maj'),'grote terts, dan kleine terts',notes('maj',0),'helder, stabiel'],
+  ['Mineur',degs('min'),'kleine terts, dan grote terts',notes('min',0),'donker, stabiel'],
+  ['Verminderd',degs('dim'),'twee kleine tertsen',notes('dim',0),'gespannen, wil oplossen'],
+  ['Overmatig',degs('aug'),'twee grote tertsen',notes('aug',0),'zwevend, onrustig']]);
+
+tbl('tSevenths',['Akkoord','Formule','Vanaf A','Drieklank plus'],[
+  ['maj7',degs('maj7'),notes('maj7',9),'majeur met een grote 7'],
+  ['7 (dominant)',degs('dom7'),notes('dom7',9),'majeur met een ♭7'],
+  ['m7',degs('m7'),notes('m7',9),'mineur met een ♭7'],
+  ['m7♭5',degs('m7b5'),notes('m7b5',9),'verminderd met een ♭7']]);
+
+/* toonsoorten in de volgorde van de kwintencirkel */
+tbl('tKeys',['Majeur','Noten','Voortekening','Relatieve mineur'],[0,7,2,9,4,11,6,1,8,3,10,5].map(r=>{const ns=F.ion.iv.map(iv=>nn(r+iv,'ion',r)),k=ns.filter(x=>x.includes('♯')).length,m=ns.filter(x=>x.includes('♭')).length;
+  return[rn(r,'ion'),ns.join(' '),k?k+(k===1?' kruis':' kruisen'):m?m+(m===1?' mol':' mollen'):'geen',nn(r+9,'ion',r)+' mineur'];}));
+
+/* akkoorden op elke trap van een ladder */
+function diatonic(fid,root){const iv=F[fid].iv,R=['i','ii','iii','iv','v','vi','vii'];
+  return iv.map((v,i)=>{const t=mod(iv[(i+2)%7]-v),f=mod(iv[(i+4)%7]-v),s=mod(iv[(i+6)%7]-v),maj=t===4,dim=f===6;
+    const num=(maj?R[i].toUpperCase():R[i])+(dim?'°':''),nm=nn(root+v,fid,root);
+    return{num,tri:nm+(dim?'dim':maj?'':'m'),sev:nm+(dim?'m7♭5':maj?(s===11?'maj7':'7'):'m7')};});}
+const dC=diatonic('ion',0),dA=diatonic('aeo',9);
+tbl('tDia',['','1','2','3','4','5','6','7'],[
+  ['C majeur'].concat(dC.map(x=>x.num)),['drieklank'].concat(dC.map(x=>x.tri)),['septiemakkoord'].concat(dC.map(x=>x.sev)),
+  ['A mineur'].concat(dA.map(x=>x.num)),['drieklank'].concat(dA.map(x=>x.tri)),['septiemakkoord'].concat(dA.map(x=>x.sev))]);
+
+const MODE=[['ion','1','helder, de gewone majeurklank','het uitgangspunt'],['dor','2','mineur, maar lichter en beweeglijk','rock, blues, funk'],['phr','3','donker en dreigend','metal, flamenco'],
+  ['lyd','4','zwevend, dromerig','filmmuziek, instrumentale rock'],['mix','5','majeur met een ruw randje','bluesrock, hardrock'],['aeo','6','de gewone mineurklank','rock, metal, ballads'],['loc','7','instabiel, zonder rustpunt','zelden als toonsoort']];
+tbl('tModes',['Modus','Formule','Familie','Kleurnoot','Begint op trap','Klank'],MODE.map(([fid,n,k])=>{const f=F[fid],mi=f.iv.includes(3);
+  return[fid==='ion'?'Ionisch (majeur)':fid==='aeo'?'Aeolisch (mineur)':f.n,degs(fid),mi?'mineur':'majeur',(fid==='ion'||fid==='aeo')?'geen':f.ch.map(iv=>deg(fid,iv)).join(' en '),n+' van majeur',k];}));
+
+tbl('tEar',['Trap','Karakter','Neiging'],[
+  ['1','volledige rust, thuis','blijft'],['5','stabiel en open','blijft, of valt naar 1'],['3','stabiel en helder, maakt het majeur','blijft'],['♭3','stabiel en donker, maakt het mineur','blijft'],
+  ['2','licht zwevend','zakt naar 1'],['4','hangt, zoekt steun','zakt naar 3 of ♭3'],['6','warm, licht','zakt naar 5'],['♭6','zwaar, droevig','zakt een halve toon naar 5'],
+  ['♭7','ruw, bluesachtig','stijgt naar 1 of zakt naar 5'],['7','scherp, sterk gespannen','stijgt een halve toon naar 1'],['♭2','donker, dreigend','zakt een halve toon naar 1'],['♭5 of ♯4','wrang, onrustig','schuift naar 5 of 4']]);
+
+tbl('tAll',['Materiaal','Formule','Vanaf A','Toelichting'],Object.keys(F).filter(k=>k!=='chr').map(k=>[F[k].n,degs(k),notes(k,9),F[k].tip||(F[k].g==='tri'?'Drieklank':F[k].g==='arp'?'Septiemakkoord':F[k].g==='int'?'Grondtoon en kwint':'')]));
+})();
+</script>
+
+</body></html>

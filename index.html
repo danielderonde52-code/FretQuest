@@ -163,8 +163,13 @@ details.how summary{cursor:pointer;font-family:var(--f-d);font-weight:600;font-s
 #prRun.bigboth #prBig{min-height:0;grid-template-columns:auto auto auto;justify-content:center;align-items:baseline;gap:6px 22px;padding:10px 0}
 #prRun.bigboth #prBig .bmain{font-size:clamp(3rem,8vw,4.5rem)}
 #prRun.bigonly #prPrompt,#prRun.bigboth #prPrompt{display:none}
+#prBig.mis .bmain{color:var(--bad)}
+.exgrp{display:grid;gap:6px}
+#prCtx.nolens .lensd{display:none}
+.lesb figcaption{display:flex;gap:10px;align-items:center}
 .live .big{font-family:var(--f-d);font-weight:700;font-size:3rem;line-height:1;min-width:2.2ch}
 .live .big.out{color:var(--bad)}
+#lvTarget.hold{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px}
 .done{display:grid;gap:10px;justify-items:start;padding-block:10px}
 .done .big{font-family:var(--f-d);font-weight:700;font-size:3rem;line-height:1}
 
@@ -250,7 +255,7 @@ html.pl body.running .btn{font-size:.92rem}
     <section id="v-pad">
       <div><span class="lbl">Vandaag</span></div>
       <div class="today" id="today"></div>
-      <div><span class="lbl">Het pad</span><p class="muted small">Elke stap bouwt op de vorige: dezelfde hals, steeds een laag erbij. Lees eerst de uitleg, oefen daarna. Een stap is af bij 85%.</p></div>
+      <div><span class="lbl">Het pad</span><p class="muted small">Elke stap bouwt op de vorige: dezelfde hals, steeds een laag erbij. Lees eerst de uitleg, oefen daarna. Een stap is af bij 85%.</p><p id="manLink" hidden style="margin-top:8px"><a class="btn ghost" href="theorie.html" style="display:inline-flex;align-items:center;text-decoration:none">Theoriehandleiding</a></p></div>
       <div class="stages" id="stages"></div>
     </section>
 
@@ -265,13 +270,12 @@ html.pl body.running .btn{font-size:.92rem}
         <span class="lbl">Opbouw</span><span class="row" id="exLayer"></span>
         <span class="lbl" style="margin-left:8px">Labels</span><span class="row" id="exLab"></span>
       </div>
-      <div class="row"><button class="btn" id="exGo">Oefen dit</button><label class="tog"><input type="checkbox" id="exSound" checked> Geluid bij tikken</label></div>
+      <div class="row"><button class="btn" id="exGo">Oefen dit</button><button class="btn ghost" id="exPlay">Speel af</button><button class="btn ghost" id="exDrone">Drone aan</button><label class="tog"><input type="checkbox" id="exSound" checked> Geluid bij tikken</label></div>
     </section>
 
     <section id="v-oef" hidden>
       <div id="prSetup" style="display:grid;gap:12px">
-        <div><span class="lbl">Oefening</span></div>
-        <div class="exlist" id="prEx"></div>
+                <div id="prEx" style="display:grid;gap:12px"></div>
         <div class="how" id="prHow"></div>
         <div class="ctx" id="prCtx"></div>
         <div class="row">
@@ -303,7 +307,7 @@ html.pl body.running .btn{font-size:.92rem}
           <label class="tog">Gevoeligheid <input type="range" id="micGate" min="0" max="100" value="40"></label>
           <span id="micMsg"></span>
         </div>
-        <div class="row" id="prBtns"><button class="btn" id="prNext" hidden>Volgende</button><button class="btn ghost" id="prShow" hidden>Toon antwoord</button><button class="btn ghost" id="prStop">Stoppen</button></div>
+        <div class="row" id="prBtns"><button class="btn ghost" id="earAgain" hidden>Opnieuw</button><button class="btn ghost" id="earRoot" hidden>Grondtoon</button><button class="btn" id="prNext" hidden>Volgende</button><button class="btn ghost" id="prShow" hidden>Toon antwoord</button><button class="btn ghost" id="prStop">Stoppen</button></div>
       </div>
 
       <div id="prDone" class="done" hidden>
@@ -442,20 +446,62 @@ function board(o){
   for(const c of cols)for(let s=0;s<6;s++)g+=`<rect class="tap" data-s="${s}" data-f="${c.f}" x="${c.x0}" y="${y(s)-RH/2}" width="${c.x1-c.x0}" height="${RH}"/>`;
   return`<svg viewBox="0 0 ${W} ${H}"${o.fit?` style="max-width:${W}px;min-width:${Math.min(W,300)}px"`:''} role="img" aria-label="Gitaarhals, fret ${lo} tot ${hi}">${g}</svg>`;}
 function onTap(el,fn){el.addEventListener('click',e=>{const t=e.target.closest('.tap');if(t)fn(+t.dataset.s,+t.dataset.f);});}
-function nd(n,fid,lab,extra){return Object.assign({s:n.s,f:n.f,cls:ivClass(fid,n.iv),label:lab==='deg'?deg(fid,n.iv):lab==='note'?NOTE[n.midi%12]:''},extra||{});}
+/* Nootnamen per toonsoort: elke trap krijgt zijn eigen letter (de 3 van E is G♯, niet A♭). De grondtoon krijgt de naam
+   die de minste kruisen en mollen oplevert. Noten buiten de formule volgen de richting van de toonsoort. */
+const LPC=[0,2,4,5,7,9,11],LET='CDEFGAB',ACC={'-1':'♭','0':'','1':'♯'};
+const SHARP=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],FLAT=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const spellCache={};
+function spell(fid,root){const k=fid+':'+root;if(spellCache[k])return spellCache[k];
+  let best=null;
+  for(let L=0;L<7;L++){const ra=mod(root-LPC[L]+6)-6;if(Math.abs(ra)>1)continue;
+    const m={};let cost=0,dir=0;
+    for(const iv of F[fid].iv){const d=parseInt(deg(fid,iv).replace(/[^0-9]/g,''),10)-1,l=(L+d)%7,pc=mod(root+iv),a=mod(pc-LPC[l]+6)-6;
+      if(Math.abs(a)>1){cost+=10;continue;}m[pc]=LET[l]+ACC[a];cost+=Math.abs(a);dir+=a;}
+    if(LET[L]+ACC[ra]===NOTE[root])cost-=0.5;
+    if(!best||cost<best.cost)best={cost,m,dir};}
+  const fb=best.dir>0?SHARP:best.dir<0?FLAT:NOTE;
+  for(let pc=0;pc<12;pc++)if(!best.m[pc])best.m[pc]=fb[pc];
+  return spellCache[k]=best.m;}
+const nn=(pc,fid,root)=>spell(fid,root)[mod(pc)];
+const rn=(root,fid)=>nn(root,fid,root);
+function nd(n,fid,lab,extra){return Object.assign({s:n.s,f:n.f,cls:ivClass(fid,n.iv),label:lab==='deg'?deg(fid,n.iv):lab==='note'?nn(n.midi,fid,n.midi-n.iv):''},extra||{});}
 
 /* ================= geluid ================= */
-const Au={ctx:null,dr:null,
-  ensure(){if(!this.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;this.ctx=new C();}if(this.ctx.state==='suspended')this.ctx.resume();return this.ctx;},
-  pluck(midi){const c=this.ensure();if(!c)return;const t=c.currentTime,o=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();
-    o.type='sawtooth';o.frequency.value=440*Math.pow(2,(midi-69)/12);lp.type='lowpass';lp.frequency.setValueAtTime(2600,t);lp.frequency.exponentialRampToValueAtTime(500,t+.5);
-    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.2,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+1.1);
-    o.connect(lp);lp.connect(g);g.connect(c.destination);o.start(t);o.stop(t+1.15);},
-  drone(root){this.stopDrone();const c=this.ensure();if(!c)return;const g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
-    g.gain.value=.0001;g.gain.exponentialRampToValueAtTime(.11,c.currentTime+.6);lp.connect(g);g.connect(c.destination);
-    const base=40+mod(root-4),os=[base,base+7,base+12].map((m,i)=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(m-69)/12);o.detune.value=i*4-4;o.connect(lp);o.start();return o;});
-    this.dr={g,os};},
-  stopDrone(){if(!this.dr)return;const d=this.dr;this.dr=null;try{d.g.gain.exponentialRampToValueAtTime(.0001,this.ctx.currentTime+.2);d.os.forEach(o=>o.stop(this.ctx.currentTime+.25));}catch(e){}}
+/* Getokkelde snaar: per noot één keer uitgerekend (boventonen die elk in hun eigen tempo uitsterven) en daarna bewaard.
+   Alles wordt in de app zelf opgewekt, dus het werkt ook zonder internet. */
+const Au={ctx:null,dr:null,drRoot:null,bufs:{},live:new Set(),
+  ensure(){if(!this.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;this.ctx=new C();
+      this.out=this.ctx.createGain();this.out.gain.value=.9;this.out.connect(this.ctx.destination);}
+    if(this.ctx.state==='suspended')this.ctx.resume();
+    if(!this.warm){this.warm=1;/* de noten vast klaarzetten op rustige momenten, zodat de eerste keer afspelen niet hapert */
+      let m=40;const step=()=>{if(m>88)return;this.buf(m++);(window.requestIdleCallback||setTimeout)(step,{timeout:400});};setTimeout(step,300);}
+    return this.ctx;},
+  buf(midi){if(this.bufs[midi])return this.bufs[midi];
+    const sr=24000,f0=440*Math.pow(2,(midi-69)/12),T=Math.max(.9,Math.min(2.4,2.5-(midi-40)*.028)),N=Math.round(sr*(T+.5)),b=this.ctx.createBuffer(1,N,sr),d=b.getChannelData(0);
+    let peak=0;
+    for(let k=1;k<=24;k++){const f=k*f0*Math.sqrt(1+.00002*k*k);if(f>5200)break;
+      const a=Math.abs(Math.sin(Math.PI*k*.19))/Math.pow(k,1.15);if(a<.004)continue;
+      const tau=T/(1+.42*(k-1)),w=2*Math.PI*f/sr,dec=Math.exp(-1/(tau*sr));let env=a,y1=0,y2=-Math.sin(w);const c2=2*Math.cos(w);
+      const stop=a*.0008;for(let n=0;n<N&&env>stop;n++){const y=c2*y1-y2;y2=y1;y1=y;d[n]+=y*env;env*=dec;}}
+    const att=Math.round(sr*.004),rel=Math.round(sr*.08);
+    for(let n=0;n<N;n++){if(n<att)d[n]*=n/att;if(n>N-rel)d[n]*=(N-n)/rel;const v=Math.abs(d[n]);if(v>peak)peak=v;}
+    for(let n=0;n<N;n++)d[n]*=.55/peak;
+    return this.bufs[midi]=b;},
+  /* speel één noot, 'na' seconden vanaf nu */
+  note(midi,na,gain){const c=this.ensure();if(!c)return;const src=c.createBufferSource(),g=c.createGain();src.buffer=this.buf(midi);g.gain.value=gain==null?.8:gain;
+    src.connect(g);g.connect(this.out);src.start(c.currentTime+(na||0));this.live.add(src);src.onended=()=>this.live.delete(src);},
+  pluck(midi){this.note(midi,0);},
+  seq(midis,stap,na){midis.forEach((m,i)=>this.note(m,(na||0)+i*(stap||.26)));return (na||0)+midis.length*(stap||.26);},
+  /* de toonsoort neerzetten: het akkoord van het materiaal, als een rustige aanslag */
+  chord(root,fid,na){const T=60+mod(root),cs=chordSet(fid),th=cs.filter(v=>v===3||v===4),fi=cs.find(v=>v>=6&&v<=8)||7;
+    const ms=[T-12,T-12+fi,T].concat(th.length===1?[T+th[0]]:[],[T+fi]);ms.forEach((m,i)=>this.note(m,(na||0)+i*.045,.5));},
+  hush(){this.live.forEach(x=>{try{x.stop();}catch(e){}});this.live.clear();},
+  /* drone: grondtoon, kwint en octaaf. hoog=true legt hem in het middenregister, zodat hij ook op een telefoonspeaker hoorbaar is. */
+  drone(root,hoog,vol){this.stopDrone();const c=this.ensure();if(!c)return;const g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hoog?900:700;
+    g.gain.value=.0001;g.gain.exponentialRampToValueAtTime(vol||(hoog?.05:.11),c.currentTime+.6);lp.connect(g);g.connect(this.out);
+    const base=hoog?48+mod(root):40+mod(root-4),os=[base,base+7,base+12].map((m,i)=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(m-69)/12);o.detune.value=i*4-4;o.connect(lp);o.start();return o;});
+    this.dr={g,os};this.drRoot=root;},
+  stopDrone(){if(!this.dr)return;const d=this.dr;this.dr=null;this.drRoot=null;try{d.g.gain.exponentialRampToValueAtTime(.0001,this.ctx.currentTime+.2);d.os.forEach(o=>o.stop(this.ctx.currentTime+.25));}catch(e){}}
 };
 
 /* ---- toonhoogte: McLeod-methode op een gehalveerd venster, met aanslagdetectie ---- */
@@ -506,13 +552,15 @@ const Mic={on:false,eng:null,
     const r=this.eng.frame(this.buf,Au.ctx.sampleRate,gateFrom(ui.gate),performance.now());
     $('micLvl').style.width=Math.min(100,r.rms*600)+'%';
     if(r.midi!=null&&r.midi>=38&&r.midi<=91)$('micNote').textContent=NOTE[r.midi%12];
-    if(r.note!=null)heard(r.note,null,null);}};
+    if(r.note!=null)heard(r.note,null,null);
+    if(run.jam)jamHold(r.midi,performance.now());}};
 function micUI(err){
   $('micBtn').textContent=Mic.on?'Microfoon uit':'Microfoon aan';$('micBtn').classList.toggle('on',Mic.on);
   const m=$('micMsg');m.classList.toggle('err',!!err);
   if(err)m.textContent=window.self!==window.top?'De microfoon is geblokkeerd in deze weergave. Open de losse kopie (index.html) in Chrome om mee te spelen. Tikken op de hals werkt hier wel.'
     :err.name==='NotAllowedError'?'Toegang geweigerd. Sta de microfoon toe in de site-instellingen van je browser.':'Geen microfoon gevonden. Open de pagina via https.';
-  else m.textContent=Mic.on?'Speel losse noten en laat ze even klinken.':'Zonder microfoon: tik de noot op de hals.';
+  else m.textContent=Mic.on?'Speel losse noten en laat ze even klinken. De microfoon hoort de toon, niet de snaar.':'Zonder microfoon: tik de noot op de hals.';
+  if(run.active&&run.drill==='hspeel'&&Mic.on)m.textContent='De microfoon luistert zodra het voorbeeld is uitgeklonken.';
   if(run.active&&run.q&&!run.jam)drawQ();}
 
 /* ================= context-balk (toonsoort, materiaal, lens) ================= */
@@ -525,10 +573,10 @@ function renderCtx(el){
     else if(L.t==='set')lab=SNAME.slice(i,i+3).join('-');
     else lab=SNAME[i];
     idx+=`<button class="chip" data-li="${i}" aria-pressed="${(L.i||0)===i}">${lab}</button>`;}
-  el.innerHTML=`<div class="wide"><span class="lbl">Grondtoon</span><div class="row">${NOTE.map((nm,i)=>`<button class="chip k" data-root="${i}" aria-pressed="${cfg.root===i}">${nm}</button>`).join('')}</div></div>
+  el.innerHTML=`<div class="wide"><span class="lbl">Grondtoon</span><div class="row">${NOTE.map((nm,i)=>`<button class="chip k" data-root="${i}" aria-pressed="${cfg.root===i}">${rn(i,cfg.fid)}</button>`).join('')}</div></div>
   <div><span class="lbl">Materiaal</span><select class="chip" data-fid aria-label="Materiaal">${Object.keys(GROUPS).map(g=>`<optgroup label="${GROUPS[g]}">${Object.keys(F).filter(k=>F[k].g===g).map(k=>`<option value="${k}"${k===cfg.fid?' selected':''}>${F[k].n}</option>`).join('')}</optgroup>`).join('')}</select></div>
-  <div><span class="lbl">Lens</span><select class="chip" data-lt aria-label="Lens">${Object.keys(LENS).map(k=>`<option value="${k}"${k===L.t?' selected':''}${k==='nps'&&f.iv.length!==7?' disabled':''}>${LENS[k]}</option>`).join('')}</select></div>
-  ${n?`<div class="wide"><span class="lbl">${L.t==='pos'?'Positie':L.t==='nps'?'Patroon':L.t==='set'?'Snaren':'Snaar'}</span><div class="row">${idx}</div></div>`:''}`;}
+  <div class="lensd"><span class="lbl">Lens</span><select class="chip" data-lt aria-label="Lens">${Object.keys(LENS).map(k=>`<option value="${k}"${k===L.t?' selected':''}${k==='nps'&&f.iv.length!==7?' disabled':''}>${LENS[k]}</option>`).join('')}</select></div>
+  ${n?`<div class="wide lensd"><span class="lbl">${L.t==='pos'?'Positie':L.t==='nps'?'Patroon':L.t==='set'?'Snaren':'Snaar'}</span><div class="row">${idx}</div></div>`:''}`;}
 function bindCtx(el,after){
   el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
     if(b.dataset.root!=null)cfg.root=+b.dataset.root;else if(b.dataset.li!=null)cfg.lens.i=+b.dataset.li;else return;saveCfg();after();});
@@ -546,43 +594,50 @@ function renderExplore(){
   $('exLab').innerHTML=[['deg','Trappen'],['note','Noten'],['none','Geen']].map(([k,l])=>`<button class="chip" data-lab="${k}" aria-pressed="${cfg.lab===k}">${l}</button>`).join('');
   $('legend').innerHTML=`<span><i class="sw" style="background:var(--c1)"></i>grondtoon</span><span><i class="sw" style="background:var(--c3)"></i>terts</span><span><i class="sw" style="background:var(--c5)"></i>kwint</span><span><i class="sw" style="background:var(--c7)"></i>septiem</span><span><i class="sw o"></i>overige</span>${f.ch?'<span><i class="sw r"></i>kleurnoot</span>':''}`;
   const M=mod(cfg.root+f.par);let rel='';
-  if(f.iv.length===7&&cfg.fid!=='ion'&&f.g==='mode')rel=`Zelfde noten als ${NOTE[M]} majeur. `;
-  if(cfg.fid==='phd')rel=`Zelfde noten als ${NOTE[mod(cfg.root+5)]} harmonisch mineur. `;
-  const chTxt=f.ch?`Kleurnoot: ${f.ch.map(iv=>deg(cfg.fid,iv)+' ('+NOTE[mod(cfg.root+iv)]+')').join(' en ')}. `:'';
-  $('exInfo').innerHTML=`<b>${NOTE[cfg.root]} · ${esc(f.n)} <span class="muted" style="font-family:var(--f-b);font-size:.9rem;font-weight:400">${esc(L.name)}</span></b>
-    <span class="f">${f.iv.map(iv=>deg(cfg.fid,iv)).join(' ')} &nbsp;·&nbsp; ${f.iv.map(iv=>NOTE[mod(cfg.root+iv)]).join(' ')}</span>
+  if(f.iv.length===7&&cfg.fid!=='ion'&&f.g==='mode')rel=`Zelfde noten als ${nn(M,cfg.fid,cfg.root)} majeur. `;
+  if(cfg.fid==='phd')rel=`Zelfde noten als ${nn(cfg.root+5,cfg.fid,cfg.root)} harmonisch mineur. `;
+  const chTxt=f.ch?`Kleurnoot: ${f.ch.map(iv=>deg(cfg.fid,iv)+' ('+nn(cfg.root+iv,cfg.fid,cfg.root)+')').join(' en ')}. `:'';
+  $('exInfo').innerHTML=`<b>${rn(cfg.root,cfg.fid)} · ${esc(f.n)} <span class="muted" style="font-family:var(--f-b);font-size:.9rem;font-weight:400">${esc(L.name)}</span></b>
+    <span class="f">${f.iv.map(iv=>deg(cfg.fid,iv)).join(' ')} &nbsp;·&nbsp; ${f.iv.map(iv=>nn(cfg.root+iv,cfg.fid,cfg.root)).join(' ')}</span>
     <span class="muted small">${rel}${chTxt}${f.tip||''}</span>`;
-  $('exSound').checked=ui.sound;}
+  $('exSound').checked=ui.sound;if(Au.dr&&Au.drRoot!==cfg.root)Au.drone(cfg.root,true,.06);droneUI();}
 onTap($('exBoard'),(s,f)=>{const n=mk(s,f,cfg.root);exSel=key(n);if(ui.sound)Au.pluck(n.midi);renderExplore();
-  const el=document.createElement('span');el.className='small';el.innerHTML=`Getikt: <b style="font-size:1rem">${NOTE[n.midi%12]}</b> op de ${SNAME[s]}-snaar, fret ${f} = trap ${DEGN[n.iv]} van ${NOTE[cfg.root]}`;$('exInfo').appendChild(el);});
+  const el=document.createElement('span');el.className='small';el.innerHTML=`Getikt: <b style="font-size:1rem">${nn(n.midi,cfg.fid,cfg.root)}</b> op de ${SNAME[s]}-snaar, fret ${f} = trap ${F[cfg.fid].iv.includes(n.iv)?deg(cfg.fid,n.iv):DEGN[n.iv]} van ${rn(cfg.root,cfg.fid)}`;$('exInfo').appendChild(el);});
 bindCtx($('exCtx'),()=>{exSel=null;renderExplore();});
 $('v-hals').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.lay){cfg.lay=b.dataset.lay;saveCfg();renderExplore();}if(b.dataset.lab){cfg.lab=b.dataset.lab;saveCfg();renderExplore();}});
 $('exSound').onchange=e=>{ui.sound=e.target.checked;saveCfg();};
 $('exGo').onclick=()=>{show('oef');};
+/* afspelen: een positie of patroon van laag naar hoog en terug; bij een bredere lens één octaaf van de formule */
+function playLens(){Au.hush();const L=getLens(cfg.fid,cfg.root,cfg.lens);let ms;
+  if(L.win)ms=[...new Set(L.notes.map(n=>n.midi))].sort((a,b)=>a-b);else{const T=48+mod(cfg.root);ms=F[cfg.fid].iv.map(v=>T+v).concat([T+12]);}
+  Au.seq(ms.concat(ms.slice(0,-1).reverse()),ms.length>12?.2:.26);}
+$('exPlay').onclick=playLens;
+function droneUI(){const b=$('exDrone');b.classList.toggle('on',!!Au.dr);b.textContent=Au.dr?'Drone uit':'Drone aan';}
+$('exDrone').onclick=()=>{if(Au.dr)Au.stopDrone();else Au.drone(cfg.root,true,.06);droneUI();};
 
 /* ================= oefeningen ================= */
 const run={};
 function wpick(items,kf){const w=items.map(x=>1+Math.min(4,store.err[kf(x)]||0));let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<items.length;i++){r-=w[i];if(r<=0)return items[i];}return items[items.length-1];}
 function mark(k,ok){store.err[k]=Math.max(0,(store.err[k]||0)+(ok?-1:2));}
 function qctx(fid,forcePos){
-  const root=run.rk?rnd(12):cfg.root;let lens=Object.assign({},run.lens);
+  const root=run.ear?run.ear.root:run.rk?rnd(12):cfg.root;let lens=Object.assign({},run.lens);
   if(lens.t==='nps'&&F[fid].iv.length!==7)lens={t:'pos',i:0};
   if(forcePos&&lens.t==='all')lens={t:'pos',i:rnd(5)};else if(run.rp&&lensCount[lens.t])lens.i=rnd(lensCount[lens.t]);
   return{root,fid,L:getLens(fid,root,lens)};}
-const kn=c=>`${NOTE[c.root]} ${F[c.fid].n.toLowerCase()}`;
+const kn=c=>`${rn(c.root,c.fid)} ${F[c.fid].n.toLowerCase()}`;
 const roots=c=>c.L.notes.filter(n=>n.iv===0).map(n=>nd(n,c.fid,'deg'));
 const DR={
   naam:{n:'Benoem de noot',d:'Eén fret licht op. Welke noot is het?',free:1,make(){const s=rnd(6),f=rnd(13),p=(OPEN[s]+f)%12;
     return{type:'choice',prompt:'Welke noot is dit?',dots:[{s,f,cls:'tone',ring:'cur'}],choices:NOTE.map((l,i)=>({l,ok:i===p})),after:[{s,f,cls:'ok',label:NOTE[p]}],ek:'n'+p};}},
   vind:{n:'Vind de noot',d:'Tik een noot op alle zes de snaren.',free:1,make(){const p=wpick([...Array(12).keys()],x=>'n'+x),t=[];
     for(let s=0;s<6;s++)for(let f=1;f<=12;f++)if((OPEN[s]+f)%12===p)t.push({s,f,iv:0,midi:OPEN[s]+f});
-    return{type:'tap',prompt:`Tik elke <em>${NOTE[p]}</em>, fret 1 t/m 12`,dots:[],targets:t,lab:()=>({cls:'ok',label:NOTE[p]}),ek:'n'+p,inF:(s,f)=>(OPEN[s]+f)%12===p};}},
+    return{type:'tap',prompt:`Tik elke <em>${NOTE[p]}</em>, fret 1 t/m 12`,dots:[],targets:t,lab:n=>({s:n.s,f:n.f,cls:'ok',label:NOTE[p]}),ek:'n'+p,inF:(s,f)=>(OPEN[s]+f)%12===p};}},
   trap:{n:'Benoem de trap',d:'Een noot licht op. Welke trap is het ten opzichte van de grondtoon?',make(){const c=qctx(run.fid),cand=c.L.notes.filter(n=>n.iv!==0);
     const n=wpick(cand,x=>c.fid+x.iv),f=F[c.fid];
     return{type:'choice',prompt:`<em>${kn(c)}</em>, ${c.L.name}: welke trap?`,win:c.L.win,hi:c.L.hi,dots:[...(run.hint?roots(c):[]),{s:n.s,f:n.f,cls:'tone',ring:'cur'}],
       choices:f.iv.filter(iv=>iv!==0).map(iv=>({l:deg(c.fid,iv),ok:iv===n.iv})),after:[...roots(c),nd(n,c.fid,'deg',{ring:'cur'})],ek:c.fid+n.iv,
-      why:`${deg(c.fid,n.iv)} = ${NOTE[n.midi%12]}`};}},
+      why:`${deg(c.fid,n.iv)} = ${nn(n.midi,c.fid,c.root)}`};}},
   zoek:{n:'Zoek de trap',d:'Tik alle noten van één trap binnen de lens.',make(){const c=qctx(run.fid),f=F[c.fid];
     const iv=wpick(f.iv.filter(v=>v!==0||!run.hint),x=>c.fid+x),t=c.L.notes.filter(n=>n.iv===iv);
     return{type:'tap',prompt:`<em>${kn(c)}</em>, ${c.L.name}: tik elke <em>${deg(c.fid,iv)}</em>`,win:c.L.win,hi:c.L.hi,dots:run.hint&&iv!==0?roots(c):[],targets:t,lab:n=>nd(n,c.fid,'deg'),ek:c.fid+iv,inF:(s,f)=>mod(OPEN[s]+f-c.root)===iv};}},
@@ -592,28 +647,46 @@ const DR={
     const fid=wpick(g,x=>'h'+x),c=qctx(fid,true);
     return{type:'choice',prompt:'Welk materiaal is dit? De rode noot is de grondtoon.',win:c.L.win,hi:c.L.hi,dots:c.L.notes.map(n=>n.iv===0?nd(n,fid,'deg'):{s:n.s,f:n.f,cls:'tone'}),
       choices:g.map(k=>({l:F[k].n,ok:k===fid})),after:c.L.notes.map(n=>nd(n,fid,'deg',{ring:(F[fid].ch||[]).includes(n.iv)?'ch':null})),ek:'h'+fid,why:`${kn(c)}: ${F[fid].iv.map(iv=>deg(fid,iv)).join(' ')}`};}},
-  gnoot:{n:'Speel de noot',d:'De app noemt een noot en een snaar. Speel hem.',gt:1,free:1,make(){const s=rnd(6),f=1+rnd(11),n={s,f,midi:OPEN[s]+f,iv:0};
-    return{type:'play',loose:1,big:{main:NOTE[n.midi%12],sub:`op de <b>${SNAME[s]}</b>-snaar`,ctx:''},prompt:`Speel <em>${NOTE[n.midi%12]}</em> op de <em>${SNAME[s]}</em>-snaar`,dots:[],seq:[n],lab:()=>({cls:'ok',label:NOTE[n.midi%12]}),ek:'n'+n.midi%12};}},
-  gtrap:{n:'Speel de trap',d:'De app noemt een trap en een snaar. Vind hem vanuit de grondtoon.',gt:1,make(){const c=qctx(run.fid),n=wpick(c.L.notes.filter(x=>x.iv!==0),x=>c.fid+x.iv);
+  gnoot:{n:'Speel de noot',d:'De app noemt een noot en een snaar. Speel hem. De microfoon controleert de toon, niet de snaar.',gt:1,free:1,make(){const s=rnd(6),f=1+rnd(11),n={s,f,midi:OPEN[s]+f,iv:0};
+    return{type:'play',loose:1,big:{main:NOTE[n.midi%12],sub:`op de <b>${SNAME[s]}</b>-snaar`,ctx:''},prompt:`Speel <em>${NOTE[n.midi%12]}</em> op de <em>${SNAME[s]}</em>-snaar`,dots:[],seq:[n],lab:x=>({s:x.s,f:x.f,cls:'ok',label:NOTE[x.midi%12]}),ek:'n'+n.midi%12};}},
+  gtrap:{n:'Speel de trap',d:'De app noemt een trap en een snaar. Vind hem vanuit de grondtoon. De microfoon controleert de toon, niet de snaar.',gt:1,make(){const c=qctx(run.fid),n=wpick(c.L.notes.filter(x=>x.iv!==0),x=>c.fid+x.iv);
     return{type:'play',loose:1,big:{main:deg(c.fid,n.iv),sub:`op de <b>${SNAME[n.s]}</b>-snaar`,ctx:`${kn(c)} · ${c.L.name}`,keep:run.hint},prompt:`<em>${kn(c)}</em>, ${c.L.name}: speel de <em>${deg(c.fid,n.iv)}</em> op de <em>${SNAME[n.s]}</em>-snaar`,win:c.L.win,hi:c.L.hi,dots:run.hint?roots(c):[],seq:[n],lab:x=>nd(x,c.fid,'deg'),ek:c.fid+n.iv};}},
   gloop:{n:'Loop de vorm',d:'Speel de vorm noot voor noot omhoog en weer terug. De app volgt je.',gt:1,make(){const c=qctx(run.fid,true);let up=c.L.notes.slice().sort((a,b)=>a.s-b.s||a.f-b.f);
     /* drieklanken op een snaarset: ligging voor ligging in plaats van snaar voor snaar */
     if(run.lens.t==='set'&&F[c.fid].iv.length===3){const ss=[...new Set(up.map(n=>n.s))],by=ss.map(x=>up.filter(n=>n.s===x));
       if(by.every(a=>a.length===by[0].length))up=by[0].flatMap((_,k)=>by.map(a=>a[k]));}
     return{type:'play',prompt:`Loop <em>${kn(c)}</em> in ${c.L.name}, omhoog en terug`,win:c.L.win,hi:c.L.hi,dots:run.hint?c.L.notes.map(n=>nd(n,c.fid,'deg',{cls:'ghost'})):roots(c),seq:up.concat(up.slice(0,-1).reverse()),guide:run.hint,lab:x=>nd(x,c.fid,'deg'),ek:c.fid+'l'};}},
+  /* ---- op gehoor: de toonsoort staat de hele ronde vast, zodat je trappen leert horen en geen losse afstanden ---- */
+  hoor:{n:'Hoor de trap',d:'De toonsoort klinkt, daarna één noot. Welke trap hoor je? Alleen luisteren, geen gitaar nodig.',ear:1,nolens:1,make(){const e=run.ear,f=F[run.fid];
+    let iv;do{iv=wpick(f.iv,x=>'e'+run.fid+x);}while(f.iv.length>2&&iv===e.last);e.last=iv;
+    const m=60+mod(e.root)+iv+(iv===0&&Math.random()<.4?12:0),c={root:e.root,fid:run.fid};
+    return{type:'choice',prompt:`<em>${kn(c)}</em>: welke trap hoor je?`,dots:[],play:[m],ek:'e'+run.fid+iv,
+      big:{always:1,ctx:kn(c),main:'?',sub:'Welke trap hoor je?',mainDone:deg(run.fid,iv),subDone:`de ${deg(run.fid,iv)} van ${rn(e.root,run.fid)} is <b>${nn(e.root+iv,run.fid,e.root)}</b>`},
+      choices:f.iv.map(v=>({l:deg(run.fid,v),ok:v===iv}))};}},
+  hvind:{n:'Hoor en vind',d:'Je hoort een noot uit de positie. Wijs hem aan op de hals. De eerste tik telt.',ear:1,make(){const c=qctx(run.fid,true),e=run.ear;
+    let n;do{n=wpick(c.L.notes,x=>'e'+c.fid+x.iv);}while(c.L.notes.length>2&&n.midi===e.last);e.last=n.midi;
+    return{type:'tap',one:1,prompt:`<em>${kn(c)}</em>, ${c.L.name}: tik de noot die je hoort`,win:c.L.win,hi:c.L.hi,dots:roots(c).filter(d=>!(d.s===n.s&&d.f===n.f)),
+      targets:[n],lab:x=>nd(x,c.fid,'deg'),play:[n.midi],ek:'e'+c.fid+n.iv,why:`Het was de ${deg(c.fid,n.iv)} (${nn(n.midi,c.fid,c.root)}).`};}},
+  hspeel:{n:'Hoor en speel',d:'Je hoort een noot uit de positie. Speel hem na op de gitaar; zoeken op gehoor mag.',ear:1,gt:1,make(){const c=qctx(run.fid,true),e=run.ear;
+    let n;do{n=wpick(c.L.notes,x=>'e'+c.fid+x.iv);}while(c.L.notes.length>2&&n.midi===e.last);e.last=n.midi;
+    return{type:'play',prompt:`<em>${kn(c)}</em>, ${c.L.name}: speel na wat je hoort`,win:c.L.win,hi:c.L.hi,dots:run.hint?roots(c).filter(d=>!(d.s===n.s&&d.f===n.f)):[],
+      big:{ctx:`${kn(c)} · ${c.L.name}`,main:'?',sub:'Speel na wat je hoort',mainDone:deg(c.fid,n.iv),subDone:`de ${deg(c.fid,n.iv)} is <b>${nn(n.midi,c.fid,c.root)}</b>`,keep:run.hint},
+      seq:[n],lab:x=>nd(x,c.fid,'deg'),play:[n.midi],ek:'e'+c.fid+n.iv};}},
   jam:{n:'Landen op de drone',d:'Vrij spelen over een drone. De app toont live welke trap je speelt en geeft landingsdoelen.',gt:1,jam:1}
 };
-const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${lt}`;
+const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${DR[d].nolens?'all':lt}`;
 const ROUND=d=>d==='bouw'||d==='gloop'?5:10;
 
 function renderSetup(){
-  $('prEx').innerHTML=Object.keys(DR).map(k=>`<button class="excard" data-ex="${k}" aria-pressed="${ui.drill===k}">${DR[k].gt?'<span class="tag">op gitaar</span>':'<span class="tag" style="color:var(--muted)">op scherm</span>'}<b>${DR[k].n}</b><span>${DR[k].d}</span></button>`).join('');
-  renderCtx($('prCtx'));$('prCtx').hidden=!!DR[ui.drill].free;
+  const grp=[['Op scherm',k=>!DR[k].gt&&!DR[k].ear],['Op gehoor',k=>DR[k].ear],['Op gitaar',k=>DR[k].gt&&!DR[k].ear]];
+  $('prEx').innerHTML=grp.map(([t,fn])=>`<div class="exgrp"><span class="lbl">${t}</span><div class="exlist">${Object.keys(DR).filter(fn).map(k=>`<button class="excard" data-ex="${k}" aria-pressed="${ui.drill===k}">${DR[k].ear&&DR[k].gt?'<span class="tag">met gitaar</span>':''}<b>${DR[k].n}</b><span>${DR[k].d}</span></button>`).join('')}</div></div>`).join('');
+  renderCtx($('prCtx'));$('prCtx').hidden=!!DR[ui.drill].free;$('prCtx').classList.toggle('nolens',!!DR[ui.drill].nolens);
   $('prHow').innerHTML=`<span class="lbl">Denkstap</span><p class="small">${HOW[ui.drill]}</p>`;
   $('prRk').checked=ui.rk;$('prRp').checked=ui.rp;$('prHint').checked=ui.hint;$('prAuto').checked=ui.auto;
   const d=DR[ui.drill];$('prRk').parentElement.hidden=!!d.free||!!d.jam;$('prRp').parentElement.hidden=!!d.free||!!d.jam||!lensCount[cfg.lens.t];
-  $('prHint').parentElement.hidden=!['trap','zoek','gtrap','gloop'].includes(ui.drill);
-  $('prSum').textContent=d.jam?'Geen ronde: speel zo lang je wilt.':`Ronde van ${ROUND(ui.drill)}.`;}
+  $('prHint').parentElement.hidden=!['trap','zoek','gtrap','gloop','hspeel'].includes(ui.drill);
+  $('prRp').parentElement.hidden=$('prRp').parentElement.hidden||!!d.nolens;$('prRk').nextSibling.textContent=d.ear?' Willekeurige toonsoort per ronde':' Willekeurige toonsoort';
+  $('prSum').textContent=d.jam?'Geen ronde: speel zo lang je wilt.':`Ronde van ${ROUND(ui.drill)}.`+(d.ear?' Zet je geluid aan; een koptelefoon werkt het best.':'');}
 $('prEx').addEventListener('click',e=>{const b=e.target.closest('[data-ex]');if(b){ui.drill=b.dataset.ex;saveCfg();renderSetup();}});
 bindCtx($('prCtx'),renderSetup);
 for(const [id,k] of [['prRk','rk'],['prRp','rp'],['prHint','hint'],['prAuto','auto']])$(id).onchange=e=>{ui[k]=e.target.checked;saveCfg();};
@@ -628,24 +701,31 @@ function mode(m){document.body.classList.toggle('running',m==='run');
   $('prSetup').hidden=m!=='setup';$('prRun').hidden=m!=='run';$('prDone').hidden=m!=='done';}
 
 function startRound(){
-  Object.assign(run,{drill:ui.drill,fid:cfg.fid,lens:Object.assign({},cfg.lens),rk:ui.rk,rp:ui.rp,hint:ui.hint,i:0,res:[],active:true,jam:null});
+  Object.assign(run,{drill:ui.drill,fid:cfg.fid,lens:Object.assign({},cfg.lens),rk:ui.rk,rp:ui.rp,hint:ui.hint,i:0,res:[],active:true,jam:null,ear:null,muteUntil:0});
   run.key=statKey(run.drill,run.fid,run.lens.t);run.n=ROUND(run.drill);
   const d=DR[run.drill];mode('run');$('runHowT').textContent=HOW[run.drill];$('prMic').hidden=!d.gt;$('prLive').hidden=!d.jam;$('droneBtn').hidden=!d.jam;$('prChoices').innerHTML='';
   if(d.gt)micUI();
+  $('earAgain').hidden=$('earRoot').hidden=!d.ear;
+  if(d.ear){/* toonsoort neerzetten: akkoord, dan (behalve bij naspelen, waar de microfoon luistert) een zachte drone eronder */
+    run.ear={root:run.rk?rnd(12):cfg.root,last:null,intro:1.7};Au.hush();Au.chord(run.ear.root,run.fid,.05);
+    if(run.drill!=='hspeel')Au.drone(run.ear.root,true);}
   if(d.jam)startJam();else nextQ();}
-function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`<b style="color:var(--fg)">${d.n}</b>${d.free?'':' · '+esc(F[run.fid].n)+' · '+LENS[run.lens.t]}`;
+/* laat de vraag horen; de microfoon luistert pas weer als het voorbeeld is uitgeklonken */
+function earPlay(na){const q=run.q;if(!q||!q.play)return;const eind=Au.seq(q.play,.45,na||0);run.muteUntil=performance.now()+(eind+.9)*1000;return eind;}
+function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`<b style="color:var(--fg)">${d.n}</b>${d.free?'':' · '+esc(F[run.fid].n)+(d.nolens?'':' · '+LENS[run.lens.t])}`;
   $('prPips').innerHTML=d.jam?'':Array.from({length:run.n},(_,i)=>`<span class="pip ${i<run.res.length?(run.res[i].ok?'ok':'no'):i===run.i?'now':''}"></span>`).join('');}
 function nextQ(){
   clearTimeout(run.tm);if(run.i>=run.n)return finishRound();
   const q=run.q=DR[run.drill].make();q.found=new Set();q.xs=[];q.idx=0;q.done=false;run.t0=performance.now();
+  if(q.play){const na=run.ear.intro||.3;run.ear.intro=0;earPlay(na);run.t0+=na*1000;}
   $('prPrompt').innerHTML=q.prompt;$('prFb').textContent='';$('prFb').className='fb';$('prNext').hidden=true;$('prShow').hidden=q.type==='choice';
   $('prChoices').innerHTML=q.type==='choice'?q.choices.map((c,i)=>`<button class="choice" data-c="${i}">${esc(c.l)}</button>`).join(''):'';
   meta();drawQ();}
 function drawQ(){const q=run.q;let dots=q.dots.slice();
   /* gitaaroefening met de microfoon aan: de opdracht groot in beeld; de hals alleen als hij iets toont (grondtonen) of als antwoord */
-  const big=!!q.big&&Mic.on&&!(q.done&&!q.okEnd),both=big&&!!q.big.keep;
+  const big=!!q.big&&(q.big.always||(Mic.on&&!(q.done&&!q.okEnd))),both=big&&!!q.big.keep;
   $('prBig').hidden=!big;$('prBoard').hidden=big&&!both;$('prRun').classList.toggle('bigonly',big&&!both);$('prRun').classList.toggle('bigboth',both);
-  if(big){$('bigCtx').textContent=q.big.ctx;$('bigMain').textContent=q.big.main;$('bigSub').innerHTML=q.big.sub;$('prBig').classList.toggle('hit',!!q.done);}
+  if(big){$('bigCtx').textContent=q.big.ctx;$('bigMain').textContent=q.done&&q.big.mainDone?q.big.mainDone:q.big.main;$('bigSub').innerHTML=q.done&&q.big.subDone?q.big.subDone:q.big.sub;$('prBig').classList.toggle('hit',!!q.done&&q.okEnd);$('prBig').classList.toggle('mis',!!q.done&&!q.okEnd);}
   if(q.done&&q.after)dots=q.after;
   if(q.type==='tap'){for(const n of q.targets)if(q.found.has(key(n)))dots.push(q.lab(n));else if(q.done)dots.push(Object.assign(q.lab(n),{cls:'miss'}));}
   if(q.type==='play'){dots=dots.filter(d=>!q.seq.slice(0,q.idx).some(n=>n.s===d.s&&n.f===d.f));
@@ -658,7 +738,8 @@ function finish(ok,msg){const q=run.q;if(q.done)return;q.done=true;q.okEnd=ok;
   run.res.push({ok,ms});rec(run.key,ok,ms);if(q.ek){mark(q.ek,ok);save();}
   run.i++;meta();drawQ();$('prShow').hidden=true;
   const fb=$('prFb');fb.className='fb '+(ok?'ok':'no');fb.textContent=(ok?'Goed. ':'Niet goed. ')+(msg||q.why||'');fb.title=fb.textContent;
-  if(ok&&ui.auto)run.tm=setTimeout(nextQ,q.type==='choice'?800:1300);else{$('prNext').hidden=false;$('prNext').textContent=run.i>=run.n?'Afronden':'Volgende';}}
+  if(q.play&&!ok){Au.hush();const T=60+mod(run.ear.root);earPlay(.25);Au.note(q.play[0]<T-6?T-12:T,.25+q.play.length*.45+.35,.7);}   // fout: nog eens de noot, dan de grondtoon
+  if(ok&&ui.auto)run.tm=setTimeout(nextQ,q.play?1100:q.type==='choice'?800:1300);else{$('prNext').hidden=false;$('prNext').textContent=run.i>=run.n?'Afronden':'Volgende';}}
 $('prChoices').addEventListener('click',e=>{const b=e.target.closest('[data-c]'),q=run.q;if(!b||!q||q.done)return;
   const c=q.choices[+b.dataset.c];[...$('prChoices').children].forEach((el,i)=>{el.disabled=true;if(q.choices[i].ok)el.classList.add('ok');});
   if(!c.ok)b.classList.add('no');finish(c.ok,c.ok?'':'Het was '+q.choices.find(x=>x.ok).l+'. '+(q.why||''));});
@@ -668,22 +749,26 @@ onTap($('prBoard'),(s,f)=>{if(!run.active)return;if(run.jam)return heard(OPEN[s]
     if(!t&&q.win&&f>=q.win.start&&f<=q.win.end)t=q.targets.find(n=>n.midi===OPEN[s]+f&&!q.found.has(key(n)));
     /* een juiste noot buiten deze vorm is geen fout */
     if(!t&&q.inF&&q.inF(s,f)&&!q.dots.some(d=>d.s===s&&d.f===f)){const fb=$('prFb');fb.className='fb';fb.textContent='Die noot klopt, maar valt buiten deze vorm. Hij telt niet mee.';return;}
+    if(q.one){Au.hush();if(t){q.found.add(key(t));Au.note(t.midi);return finish(true,nd(t,run.fid,'deg').label?`De ${q.lab(t).label}.`:'');}q.xs.push({s,f});return finish(false,q.why);}
     if(t){if(q.found.has(key(t)))return;q.found.add(key(t));Au.pluck(t.midi);if(q.found.size===q.targets.length)return finish(q.xs.length===0,q.xs.length?`${q.xs.length} keer mis getikt.`:'');}
     else if(!q.dots.some(d=>d.s===s&&d.f===f)){q.xs.push({s,f});if(q.xs.length>=4)return finish(false,'Te veel missers.');}
     drawQ();}
   else if(q.type==='play')heard(OPEN[s]+f,s,f);});
 /* een noot gehoord (microfoon) of getikt (s,f bekend) */
-function heard(midi,s,f){if(!run.active)return;if(run.jam)return jamNote(midi);const q=run.q;if(!q||q.done||q.type!=='play')return;
+function heard(midi,s,f){if(!run.active)return;if(s==null&&performance.now()<run.muteUntil)return;   // het eigen voorbeeld uit de speaker telt niet
+  if(run.jam)return jamNote(midi,s!=null);const q=run.q;if(!q||q.done||q.type!=='play')return;
   const t=q.seq[q.idx];let hit;
   if(s!=null)hit=q.loose?(s===t.s&&mod(midi-t.midi)===0):midi===t.midi;
-  else hit=midi===t.midi||(q.loose&&Math.abs(midi-t.midi)===12);
+  else hit=midi===t.midi;   // de microfoon moet de juiste toon in het juiste octaaf horen
   if(!hit){if(s!=null){q.xs.push({s,f});drawQ();}return;}
   if(s!=null)Au.pluck(midi);q.idx++;if(q.idx>=q.seq.length)return finish(q.xs.length===0,q.seq.length>1?`${((performance.now()-run.t0)/1000).toFixed(1)} s voor ${q.seq.length} noten.`:'');
   drawQ();}
 $('prNext').onclick=nextQ;
+$('earAgain').onclick=()=>{if(run.active&&run.q){Au.hush();earPlay(0);}};
+$('earRoot').onclick=()=>{if(run.active&&run.ear){Au.note(60+mod(run.ear.root),0,.8);run.muteUntil=performance.now()+1500;}};
 $('prShow').onclick=()=>finish(false,'Dit is het antwoord.');
 $('prStop').onclick=()=>stopRun(true);
-function stopRun(toSetup,keepMic){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();if(!keepMic)Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
+function stopRun(toSetup,keepMic){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();Au.hush();if(!keepMic)Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
 function finishRound(){const ok=run.res.filter(r=>r.ok).length,avg=run.res.reduce((a,r)=>a+r.ms,0)/run.res.length/1000;
   stopRun(false,true);mode('done');$('dScore').textContent=`${ok} / ${run.res.length}`;
   $('dText').textContent=`Gemiddeld ${avg.toFixed(1)} s per ${['tap','play'].includes(run.q.type)?'noot':'antwoord'}. Score voor deze oefening: ${Math.round(score(run.key)*100)}%.`;}
@@ -694,12 +779,13 @@ $('micGate').value=ui.gate;$('micGate').oninput=e=>{ui.gate=+e.target.value;save
 $('droneBtn').onclick=()=>{const b=$('droneBtn');if(Au.dr){Au.stopDrone();b.classList.remove('on');b.textContent='Drone aan';}else{Au.drone(run.jam.c.root);b.classList.add('on');b.textContent='Drone uit';}};
 document.addEventListener('keydown',e=>{if($('v-oef').hidden||$('prRun').hidden)return;
   if(e.key===' '&&!$('prNext').hidden){e.preventDefault();nextQ();}
+  if((e.key==='r'||e.key==='R')&&!$('earAgain').hidden)$('earAgain').click();
   const q=run.q;if(q&&!q.done&&q.type==='choice'&&/^[1-9]$/.test(e.key)){const b=$('prChoices').children[+e.key-1];if(b)b.click();}});
 
 /* ---- jam: drone, live trap, landingsdoelen ---- */
 function startJam(){$('prBig').hidden=true;$('prBoard').hidden=false;$('prRun').classList.remove('bigonly','bigboth');const root=cfg.root,fid=run.fid,L=getLens(fid,root,run.lens);
   run.jam={c:{root,fid,L},hits:0,inn:0,out:0,live:null,t0:performance.now()};
-  $('prPrompt').innerHTML=`<em>${NOTE[root]} ${F[fid].n.toLowerCase()}</em>, ${L.name}. Zet de drone aan en speel. Land op het doel en laat de noot klinken.`;
+  $('prPrompt').innerHTML=`<em>${rn(root,fid)} ${F[fid].n.toLowerCase()}</em>, ${L.name}. Zet de drone aan en speel. Land op het doel en houd de noot even vast; erlangs lopen telt niet.`;
   $('prFb').textContent='';$('prShow').hidden=true;$('prNext').hidden=true;$('lvDeg').textContent='–';meta();jamTarget();jamDraw();
   $('micMsg').textContent='Drone via de speaker stoort de microfoon. Gebruik een koptelefoon, of neem een drone op met je looper.';
   clearInterval(run.jt);run.jt=setInterval(()=>{if(run.jam)jamStat();},1000);}
@@ -709,27 +795,35 @@ function jamStat(){const j=run.jam,s=Math.floor((performance.now()-j.t0)/1000);
   $('lvStat').innerHTML=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} gespeeld · ${j.hits} landingen · ${j.inn} noten in de ladder, ${j.out} erbuiten`;}
 function jamDraw(){const j=run.jam,c=j.c;
   $('prBoard').innerHTML=board({win:c.L.win,hi:c.L.hi,dots:c.L.notes.map(n=>nd(n,c.fid,'deg',{ring:j.live!=null&&n.midi===j.live?'live':n.iv===j.target?'cur':null}))});}
-function jamNote(midi){const j=run.jam,iv=mod(midi-j.c.root),inn=F[j.c.fid].iv.includes(iv);j.live=midi;
+const HOLD=450;   // ms dat het doel moet doorklinken om als landing te tellen
+function jamNote(midi,tapped){const j=run.jam,iv=mod(midi-j.c.root),inn=F[j.c.fid].iv.includes(iv);j.live=midi;j.pend=null;
   const el=$('lvDeg');el.textContent=inn?deg(j.c.fid,iv):DEGN[iv];el.classList.toggle('out',!inn);inn?j.inn++:j.out++;
-  if(iv===j.target){j.hits++;rec(run.key,true,performance.now()-j.tt);mark(j.c.fid+iv,true);jamTarget();}
+  if(iv===j.target){if(tapped)jamLand();else{const t=performance.now();j.pend={midi,t0:t,seen:t};}}
+  $('lvTarget').classList.toggle('hold',!!j.pend);
   jamStat();jamDraw();}
+function jamLand(){const j=run.jam;j.pend=null;j.hits++;rec(run.key,true,performance.now()-j.tt);mark(j.c.fid+j.target,true);$('lvTarget').classList.remove('hold');jamTarget();jamDraw();}
+/* elke microfoonframe: klinkt het doel nog? Langs het doel lopen (een andere noot of stilte binnen de wachttijd) telt niet. */
+function jamHold(midi,t){const j=run.jam;if(!j||!j.pend)return;
+  if(midi===j.pend.midi)j.pend.seen=t;
+  if(t-j.pend.seen>180){j.pend=null;$('lvTarget').classList.remove('hold');return;}
+  if(t-j.pend.t0>=HOLD)jamLand();}
 
 /* ================= leerpad ================= */
 const STAGES=[
  {t:'Noten en octaven',s:'Elke noot op elke snaar, zonder tellen',why:'Alles hierna hangt aan nootnamen. Het doel is elke noot binnen een seconde. De octaafvormen zijn je kapstok: wie één C weet, weet ze alle zes.',view:['pow','all'],dr:[['naam'],['vind'],['gnoot']]},
- {t:'Intervallen',s:'De vaste afstanden vanaf een grondtoon',why:'Een interval is een vaste afstand op de hals. Wie weet waar de 3, de 5 en de ♭7 liggen ten opzichte van een grondtoon, kan elke vorm zelf bouwen en hoeft hem niet te onthouden. Let op de B-snaar: daar schuift alles één fret op. Begin bij de powerchord, die ken je al.',view:['chr','str'],dr:[['zoek','pow','all'],['trap','chr','str'],['trap','chr','pos'],['gtrap','pow','all']]},
- {t:'Drieklanken',s:'Drie noten op drie snaren, in drie liggingen',why:'De drieklank is het skelet onder elk akkoord en elke solo. Majeur is 1 3 5, mineur 1 ♭3 5. Op een set van drie snaren liggen de drie liggingen als een ketting langs de hals.',view:['maj','set'],dr:[['trap','maj','set'],['trap','min','set'],['bouw','maj','set'],['bouw','min','set'],['herken','maj','set'],['gloop','min','set']]},
- {t:'CAGED',s:'Vijf akkoordvormen die de hals verdelen',why:'Vijf akkoordvormen bedekken samen de hele hals. Elke positie hierna hoort bij één van die vormen. Leer per vorm waar de grondtonen liggen en bouw de akkoordtonen eromheen.',view:['maj','pos'],dr:[['bouw','maj','pos'],['bouw','min','pos'],['trap','maj','pos'],['zoek','min','pos'],['gloop','maj','pos']]},
- {t:'Pentatonisch',s:'De drieklank plus twee noten',why:'Mineur pentatonisch is de mineur drieklank plus 4 en ♭7. De vijf boxen liggen elk rond een CAGED-vorm. Je kent de vormen al; leer ze nu als trappen, zodat je weet op welke noot je landt.',view:['pmin','pos'],dr:[['trap','pmin','pos'],['zoek','pmin','pos'],['bouw','pmin','pos'],['trap','pmaj','pos'],['gloop','pmin','pos'],['jam','pmin','pos']]},
- {t:'Majeur en mineur',s:'Pentatonisch plus nog twee noten',why:'De volledige ladder is de pentatonische ladder met twee noten erbij. Eerst in de vijf posities, daarna met drie noten per snaar: dat patroon loopt gelijkmatig en is gemaakt voor snelheid.',view:['aeo','pos'],dr:[['bouw','aeo','pos'],['bouw','ion','pos'],['trap','aeo','pos'],['bouw','aeo','nps'],['gtrap','aeo','pos'],['gloop','aeo','nps']]},
- {t:'Arpeggio’s',s:'Akkoordtonen als landingsplaatsen',why:'Een arpeggio is een akkoord, noot voor noot gespeeld. Het zijn de noten waarop een solo goed landt. Een septiemakkoord is een drieklank met een 7 erbij.',view:['m7','pos'],dr:[['bouw','m7','pos'],['bouw','dom7','pos'],['trap','maj7','pos'],['herken','m7','pos'],['gloop','m7','pos']]},
- {t:'Modi',s:'Dezelfde vormen, één kleurnoot per modus',why:'Een modus is geen nieuwe vorm. Het is de pentatonische ladder die je kent, met twee noten erbij, waarvan er één de klank bepaalt. Dorisch is mineur met een 6, Phrygisch mineur met een ♭2, Mixolydisch majeur met een ♭7. Leer per modus die ene kleurnoot vinden en erop landen.',view:['dor','pos'],dr:[['zoek','dor','pos'],['trap','phr','pos'],['trap','mix','pos'],['herken','dor','pos'],['bouw','dor','pos'],['jam','dor','pos'],['jam','phr','pos']]},
- {t:'Metal-kleuren',s:'Harmonisch mineur en Phrygisch dominant',why:'Harmonisch mineur is mineur met een grote 7. Phrygisch dominant is dezelfde ladder vanaf zijn vijfde trap. Samen geven ze de neoklassieke klank van Blackmore en veel powermetal. Ten opzichte van wat je al kent verschuift telkens één noot.',view:['hmin','pos'],dr:[['bouw','hmin','pos'],['trap','phd','pos'],['herken','hmin','pos'],['gloop','hmin','nps'],['jam','phd','pos']]},
- {t:'De hele hals',s:'Posities loslaten en verbinden',why:'Nu de posities losser worden: speel langs één snaar, vind trappen over de hele hals en land op doelen terwijl de drone loopt. Dit is waar de losse vormen één kaart worden.',view:['aeo','all'],dr:[['zoek','aeo','all'],['trap','aeo','str'],['gloop','pmin','str'],['jam','aeo','all']]}
+ {t:'Intervallen',s:'De vaste afstanden vanaf een grondtoon',why:'Een interval is een vaste afstand op de hals. Wie weet waar de 3, de 5 en de ♭7 liggen ten opzichte van een grondtoon, kan elke vorm zelf bouwen en hoeft hem niet te onthouden. Let op de B-snaar: daar schuift alles één fret op. Begin bij de powerchord, die ken je al.',view:['chr','str'],dr:[['zoek','pow','all'],['trap','chr','str'],['trap','chr','pos'],['gtrap','pow','all'],['hoor','pow','all']]},
+ {t:'Drieklanken',s:'Drie noten op drie snaren, in drie liggingen',why:'De drieklank is het skelet onder elk akkoord en elke solo. Majeur is 1 3 5, mineur 1 ♭3 5. Op een set van drie snaren liggen de drie liggingen als een ketting langs de hals.',view:['maj','set'],dr:[['trap','maj','set'],['trap','min','set'],['bouw','maj','set'],['bouw','min','set'],['herken','maj','set'],['gloop','min','set'],['hoor','maj','all'],['hoor','min','all']]},
+ {t:'CAGED',s:'Vijf akkoordvormen die de hals verdelen',why:'Vijf akkoordvormen bedekken samen de hele hals. Elke positie hierna hoort bij één van die vormen. Leer per vorm waar de grondtonen liggen en bouw de akkoordtonen eromheen.',view:['maj','pos'],dr:[['bouw','maj','pos'],['bouw','min','pos'],['trap','maj','pos'],['zoek','min','pos'],['gloop','maj','pos'],['hvind','maj','pos']]},
+ {t:'Pentatonisch',s:'De drieklank plus twee noten',why:'Mineur pentatonisch is de mineur drieklank plus 4 en ♭7. De vijf boxen liggen elk rond een CAGED-vorm. Je kent de vormen al; leer ze nu als trappen, zodat je weet op welke noot je landt.',view:['pmin','pos'],dr:[['trap','pmin','pos'],['zoek','pmin','pos'],['bouw','pmin','pos'],['trap','pmaj','pos'],['gloop','pmin','pos'],['jam','pmin','pos'],['hoor','pmin','all'],['hvind','pmin','pos'],['hspeel','pmin','pos']]},
+ {t:'Majeur en mineur',s:'Pentatonisch plus nog twee noten',why:'De volledige ladder is de pentatonische ladder met twee noten erbij. Eerst in de vijf posities, daarna met drie noten per snaar: dat patroon loopt gelijkmatig en is gemaakt voor snelheid.',view:['aeo','pos'],dr:[['bouw','aeo','pos'],['bouw','ion','pos'],['trap','aeo','pos'],['bouw','aeo','nps'],['gtrap','aeo','pos'],['gloop','aeo','nps'],['hoor','aeo','all'],['hoor','ion','all'],['hvind','aeo','pos'],['hspeel','aeo','pos']]},
+ {t:'Arpeggio’s',s:'Akkoordtonen als landingsplaatsen',why:'Een arpeggio is een akkoord, noot voor noot gespeeld. Het zijn de noten waarop een solo goed landt. Een septiemakkoord is een drieklank met een 7 erbij.',view:['m7','pos'],dr:[['bouw','m7','pos'],['bouw','dom7','pos'],['trap','maj7','pos'],['herken','m7','pos'],['gloop','m7','pos'],['hoor','m7','all'],['hvind','dom7','pos']]},
+ {t:'Modi',s:'Dezelfde vormen, één kleurnoot per modus',why:'Een modus is geen nieuwe vorm. Het is de pentatonische ladder die je kent, met twee noten erbij, waarvan er één de klank bepaalt. Dorisch is mineur met een 6, Phrygisch mineur met een ♭2, Mixolydisch majeur met een ♭7. Leer per modus die ene kleurnoot vinden en erop landen.',view:['dor','pos'],dr:[['zoek','dor','pos'],['trap','phr','pos'],['trap','mix','pos'],['herken','dor','pos'],['bouw','dor','pos'],['jam','dor','pos'],['jam','phr','pos'],['hoor','dor','all'],['hoor','phr','all'],['hoor','mix','all']]},
+ {t:'Metal-kleuren',s:'Harmonisch mineur en Phrygisch dominant',why:'Harmonisch mineur is mineur met een grote 7. Phrygisch dominant is dezelfde ladder vanaf zijn vijfde trap. Samen geven ze de neoklassieke klank van Blackmore en veel powermetal. Ten opzichte van wat je al kent verschuift telkens één noot.',view:['hmin','pos'],dr:[['bouw','hmin','pos'],['trap','phd','pos'],['herken','hmin','pos'],['gloop','hmin','nps'],['jam','phd','pos'],['hoor','hmin','all'],['hoor','phd','all']]},
+ {t:'De hele hals',s:'Posities loslaten en verbinden',why:'Nu de posities losser worden: speel langs één snaar, vind trappen over de hele hals en land op doelen terwijl de drone loopt. Dit is waar de losse vormen één kaart worden.',view:['aeo','all'],dr:[['zoek','aeo','all'],['trap','aeo','str'],['gloop','pmin','str'],['jam','aeo','all'],['hoor','chr','all'],['hspeel','aeo','all']]}
 ];
 const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
 const pKey=p=>statKey(p[0],p[1],p[2]);
-const pLabel=p=>DR[p[0]].free?DR[p[0]].n:`${DR[p[0]].n} · ${F[p[1]].n} · ${LENS[p[2]].toLowerCase()}`;
+const pLabel=p=>DR[p[0]].free?DR[p[0]].n:`${DR[p[0]].n} · ${F[p[1]].n}${DR[p[0]].nolens?'':' · '+LENS[p[2]].toLowerCase()}`;
 const stageProg=st=>st.dr.reduce((a,p)=>a+Math.min(1,score(pKey(p))/0.85),0)/st.dr.length;
 function loadPreset(p){ui.drill=p[0];if(p[1]){cfg.fid=p[1];cfg.lens={t:p[2],i:0};}ui.rk=!DR[p[0]].jam;ui.rp=true;saveCfg();show('oef');}
 function renderPad(){
@@ -738,12 +832,15 @@ function renderPad(){
   const practised=[];STAGES.forEach((s,i)=>s.dr.forEach(p=>{const a=store.stats[pKey(p)];if(a&&a.length>=5&&i<=cur)practised.push(p);}));
   practised.sort((a,b)=>score(pKey(a))-score(pKey(b)));
   if(practised[0]&&score(pKey(practised[0]))<0.85)cards.push(['Opfrissen',practised[0],'Je zwakste oefening tot nu toe']);
-  const nw=st.dr.find(p=>!DR[p[0]].gt&&score(pKey(p))<0.85&&p!==practised[0]);if(nw)cards.push(['Nieuw in stap '+ROMAN[cur],nw,st.t]);
+  const nw=st.dr.find(p=>!DR[p[0]].gt&&!DR[p[0]].ear&&score(pKey(p))<0.85&&p!==practised[0]);if(nw)cards.push(['Nieuw in stap '+ROMAN[cur],nw,st.t]);
+  /* op gehoor zonder gitaar: een eigen spoor door het hele pad, zodat er altijd iets te luisteren valt */
+  const eard=STAGES.flatMap(x=>x.dr).filter(p=>DR[p[0]].ear&&!DR[p[0]].gt),er=eard.find(p=>score(pKey(p))<0.85)||eard[eard.length-1];
+  if(er)cards.push(['Op gehoor',er,'Alleen luisteren, met koptelefoon']);
   const gt=st.dr.find(p=>DR[p[0]].gt&&score(pKey(p))<0.85)||st.dr.find(p=>DR[p[0]].gt);if(gt)cards.push(['Met de gitaar',gt,'Vijf minuten is genoeg']);
   $('today').innerHTML=cards.map((c,i)=>`<button class="tcard" data-tc="${i}"><span class="lbl">${c[0]}</span><b>${esc(pLabel(c[1]))}</b><span class="muted small">${esc(c[2])}</span></button>`).join('');
   $('today').onclick=e=>{const b=e.target.closest('[data-tc]');if(b)loadPreset(cards[+b.dataset.tc][1]);};
   $('stages').innerHTML=STAGES.map((s,i)=>`<details class="stage"${i===cur?' open':''}><summary><span class="no">${ROMAN[i]}</span><h3>${s.t}<small>${s.s}</small></h3><span class="bar${prog[i]>=1?' done':''}" title="${Math.round(prog[i]*100)}%"><span style="width:${Math.round(prog[i]*100)}%"></span></span></summary>
-    <div class="sbody"><p>${s.why}</p><div class="plist">${s.dr.map((p,j)=>{const v=score(pKey(p));return`<button class="pchip" data-st="${i}" data-p="${j}"><i class="m ${v>=.85?'f':v>0?'h':''}"></i><span>${esc(pLabel(p))}</span>${DR[p[0]].gt?'<span class="tag">gitaar</span>':''}</button>`;}).join('')}</div>
+    <div class="sbody"><p>${s.why}</p><div class="plist">${s.dr.map((p,j)=>{const v=score(pKey(p));return`<button class="pchip" data-st="${i}" data-p="${j}"><i class="m ${v>=.85?'f':v>0?'h':''}"></i><span>${esc(pLabel(p))}</span>${DR[p[0]].ear?'<span class="tag">gehoor</span>':''}${DR[p[0]].gt?'<span class="tag">gitaar</span>':''}</button>`;}).join('')}</div>
     <div class="row"><button class="btn" data-les="${i}">Uitleg</button><button class="btn ghost" data-view="${i}">Bekijk op de hals</button></div></div></details>`).join('');}
 $('stages').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.p!=null)loadPreset(STAGES[+b.dataset.st].dr[+b.dataset.p]);
@@ -848,34 +945,40 @@ const LESSONS=[
    b:()=>[LB('min',9,{t:'all'})]}]
 ];
 const HOW={
+ hoor:'Luister eerst naar de toonsoort tot je de grondtoon kunt neuriën. Hoor dan hoe de noot zich daartoe verhoudt: rust hij (1, 3, 5) of wil hij ergens heen? Zing in gedachten vanaf de noot terug naar de grondtoon. Gebruik de knop Grondtoon zo vaak je wilt.',
+ hvind:'Benoem eerst in je hoofd welke trap je hoort, kijk dan waar de grondtonen liggen en leg de afstand eroverheen. Raden op de hals leert je niets; de eerste tik telt.',
+ hspeel:'Zing of neurie de noot eerst na. Zoek hem dan op de gitaar. In het begin mag je tastend zoeken; het doel is dat je hem in één keer pakt omdat je de trap herkent.',
  naam:'Zoek het dichtstbijzijnde anker dat je zeker weet: een open snaar, fret 5, 7 of 12, of een noot op de E- of A-snaar. Loop van daaruit. Het lopen verdwijnt vanzelf.',
  vind:'Begin op de E- of A-snaar en volg de octaafketting: twee snaren hoger en twee frets verder, vanaf de D- en G-snaar drie frets.',
  trap:'Zie eerst welke grondtoon het dichtst bij ligt. Herken dan de afstand als vorm. Tel niet vanaf 1 door de ladder.',
  zoek:'Ga langs elke grondtoon in de lens en leg er steeds dezelfde intervalvorm tegenaan. Controleer de B-snaar.',
  bouw:'Bouw in lagen. Eerst bij elke grondtoon de terts en de kwint, daarna de overige noten. Noem de trappen hardop.',
  herken:'Kijk naar de noten rond de grondtoon. Ligt er een noot één fret boven de 1? Is de terts groot of klein? Is het een ♭7 of een 7?',
- gnoot:'Zie de fret voor je voordat je speelt, en noem de noot hardop.',
- gtrap:'Zie eerst de grondtoon op of naast die snaar, dan de afstand ernaartoe.',
+ gnoot:'Zie de fret voor je voordat je speelt, en noem de noot hardop. De microfoon hoort alleen de toon: dezelfde toon op een andere snaar keurt hij ook goed, dus let zelf op de snaar.',
+ gtrap:'Zie eerst de grondtoon op of naast die snaar, dan de afstand ernaartoe. De microfoon hoort alleen de toon, dus let zelf op de snaar.',
  gloop:'Denk bij elke noot de trap. Langzaam en gelijkmatig werkt beter dan snel.',
- jam:'Houd de grondtoon in beeld terwijl je speelt. Kijk naar het doel voordat je erheen speelt, en laat de noot uitklinken.'
+ jam:'Houd de grondtoon in beeld terwijl je speelt. Kijk naar het doel voordat je erheen speelt, en houd de noot vast: een landing telt pas na een halve tel.'
 };
 let lesI=0;
 function renderLes(){const st=STAGES[lesI];
   $('lesBody').innerHTML=`<div class="row"><button class="btn ghost" data-go="pad">Terug naar het leerpad</button></div>
    <div><span class="lbl">Uitleg bij stap ${ROMAN[lesI]}</span><h2 class="lesT">${st.t}</h2><p class="muted">${st.s}</p></div>
-   ${LESSONS[lesI].map((x,i)=>`<article class="les"><h3><span class="no">${i+1}</span>${x.h}</h3><p>${x.p}</p>${x.b().map(b=>`<figure class="lesb">${b.cap?`<figcaption>${b.cap}</figcaption>`:''}<div class="neck">${board(b)}</div></figure>`).join('')}</article>`).join('')}
+   ${LESSONS[lesI].map((x,i)=>`<article class="les"><h3><span class="no">${i+1}</span>${x.h}</h3><p>${x.p}</p>${x.b().map((b,k)=>`<figure class="lesb"><figcaption><button class="chip" data-pl="${i}:${k}">Speel af</button>${b.cap?' '+b.cap:''}</figcaption><div class="neck">${board(b)}</div></figure>`).join('')}</article>`).join('')}
    <div><span class="lbl">Oefen het zo</span></div>
    <div class="lesd">${st.dr.map((p,j)=>`<div class="lesrow"><div><b>${esc(pLabel(p))}</b><p class="muted small">${HOW[p[0]]}</p></div><button class="btn" data-lp="${j}">Start</button></div>`).join('')}</div>
    <div class="row">${lesI>0?`<button class="btn ghost" data-ln="${lesI-1}">Vorige uitleg</button>`:''}${lesI<STAGES.length-1?`<button class="btn ghost" data-ln="${lesI+1}">Volgende uitleg</button>`:''}</div>`;
   window.scrollTo(0,0);}
 $('lesBody').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.pl){const [i,k]=b.dataset.pl.split(':').map(Number),bd=LESSONS[lesI][i].b()[k];Au.hush();
+    /* gekleurde noten van laag naar hoog; op een hele hals alleen het laagste octaaf, anders duurt het te lang */
+    let ms=[...new Set(bd.dots.filter(d=>d.cls!=='ghost').map(d=>OPEN[d.s]+d.f))].sort((a,c)=>a-c);if(ms.length>14)ms=ms.filter(m=>m<=ms[0]+12);Au.seq(ms,.3);return;}
   if(b.dataset.go)show(b.dataset.go);if(b.dataset.lp!=null)loadPreset(STAGES[lesI].dr[+b.dataset.lp]);if(b.dataset.ln!=null){lesI=+b.dataset.ln;renderLes();}});
 
 /* ================= voortgang ================= */
 function renderStat(){
   const rows=Object.keys(store.stats).map(k=>{const a=store.stats[k],[d,fid,lt]=k.split('|');if(!DR[d])return'';
     const acc=a.reduce((x,r)=>x+r[0],0)/a.length,ms=a.reduce((x,r)=>x+r[1],0)/a.length;
-    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+' · '+LENS[lt].toLowerCase():'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n">${(ms/1000).toFixed(1)} s</td><td class="n">${Math.round(score(k)*100)}%</td></tr>`;}).join('');
+    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+(DR[d].nolens?'':' · '+LENS[lt].toLowerCase()):'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n">${(ms/1000).toFixed(1)} s</td><td class="n">${Math.round(score(k)*100)}%</td></tr>`;}).join('');
   $('statTable').innerHTML=rows?`<table><thead><tr><th>Oefening</th><th>Materiaal</th><th>Antwoorden</th><th>Goed</th><th>Tijd</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table>`
     :'<p class="muted">Nog niets geoefend. Kies een oefening in het leerpad; je resultaten verschijnen hier.</p>';
   $('statConfirm').innerHTML='';}
@@ -884,13 +987,15 @@ $('statReset').onclick=()=>{$('statConfirm').innerHTML='<span class="small">Alle
 
 /* ================= navigatie ================= */
 const VIEWS=['pad','hals','oef','stat'],TABS=['pad','hals','oef','stat','les'];
-function show(v){if(run.active)stopRun(false);Mic.stop();
+function show(v){if(run.active)stopRun(false);Mic.stop();Au.stopDrone();if(Au.ctx)Au.hush();
   for(const k of TABS)$('v-'+k).hidden=k!==v;for(const k of VIEWS)$('t-'+k).setAttribute('aria-selected',k===v||(v==='les'&&k==='pad'));
   if(v==='les')renderLes();
   if(v==='pad')renderPad();if(v==='hals')renderExplore();if(v==='oef'){mode('setup');renderSetup();}if(v==='stat')renderStat();
   saveCfg();}
 for(const k of VIEWS)$('t-'+k).onclick=()=>show(k);
-window.__hk={heard,micUI,Mic,grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
+window.__hk={Au,spell,rn,jamHold,heard,micUI,Mic,grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
+/* de handleiding staat als los bestand naast de app; binnen de Claude-weergave is die er niet */
+if(window.self===window.top&&/^https?:$/.test(location.protocol))$('manLink').hidden=false;
 show('pad');
 })();
 </script>
