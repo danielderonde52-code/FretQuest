@@ -129,6 +129,9 @@ details.how summary{cursor:pointer;font-family:var(--f-d);font-weight:600;font-s
 .pchip .m{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--muted);flex:none}
 .pchip .m.h{background:linear-gradient(90deg,var(--accent) 50%,transparent 50%);border-color:var(--accent)}
 .pchip .m.f{background:var(--ok);border-color:var(--ok)}
+.pchip .m.d{background:var(--ok);border-color:var(--bg);box-shadow:0 0 0 2px var(--accent)}
+.sesbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+#dSes{display:grid;gap:2px;font-variant-numeric:tabular-nums}
 .pchip .tag{font-family:var(--f-m);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--c5)}
 @media (max-width:520px){.sbody{padding-left:2px}}
 
@@ -148,7 +151,7 @@ details.how summary{cursor:pointer;font-family:var(--f-d);font-weight:600;font-s
 .choices{display:flex;flex-wrap:wrap;gap:6px}
 .choice{min-width:50px;padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);font:700 1.02rem var(--f-d);min-height:42px}
 .choice.ok{background:var(--ok);color:#08170e;border-color:var(--ok)} .choice.no{background:var(--bad);color:#fff;border-color:var(--bad)}
-.fb{font-weight:700;min-height:1.5em} .fb.ok{color:var(--ok)} .fb.no{color:var(--bad)}
+.fb{font-weight:700;min-height:1.5em} .fb.ok{color:var(--ok)} .fb.no{color:var(--bad)} .fb.slow{color:var(--accent)}
 .mic{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:.86rem;color:var(--muted)}
 .meter{width:90px;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .meter span{display:block;height:100%;width:0;background:var(--ok)}
@@ -256,9 +259,10 @@ html.pl body.running .btn{font-size:.92rem}
 
   <main>
     <section id="v-pad">
-      <div><span class="lbl">Vandaag</span></div>
+      <div class="sesbar"><button class="btn" id="sesStart">Start sessie van 10 minuten</button><label class="tog"><input type="checkbox" id="sesGt"> Met gitaar</label><span class="muted small" id="sesInfo"></span></div>
+      <div><span class="lbl">Vandaag</span><p class="muted small">De sessie doet deze onderdelen achter elkaar. Je kunt ze ook los kiezen.</p></div>
       <div class="today" id="today"></div>
-      <div><span class="lbl">Het pad</span><p class="muted small">Elke stap bouwt op de vorige: dezelfde hals, steeds een laag erbij. Lees eerst de uitleg, oefen daarna. Een stap is af bij 85%.</p><p id="manLink" hidden style="margin-top:8px"><a class="btn ghost" href="theorie.html" style="display:inline-flex;align-items:center;text-decoration:none">Theoriehandleiding</a></p></div>
+      <div><span class="lbl">Het pad</span><p class="muted small">Elke stap bouwt op de vorige: dezelfde hals, steeds een laag erbij. Lees eerst de uitleg, oefen daarna. Een oefening is af bij 85% goed binnen de tijdsnorm, en komt daarna terug na 1, 3, 7, 14 en 30 dagen.</p><p id="manLink" hidden style="margin-top:8px"><a class="btn ghost" href="theorie.html" style="display:inline-flex;align-items:center;text-decoration:none">Theoriehandleiding</a></p></div>
       <div class="stages" id="stages"></div>
     </section>
 
@@ -317,12 +321,13 @@ html.pl body.running .btn{font-size:.92rem}
       <div id="prDone" class="done" hidden>
         <div class="big" id="dScore"></div>
         <p id="dText" class="muted"></p>
-        <div class="row"><button class="btn" id="dAgain">Nog een ronde</button><button class="btn ghost" id="dSetup">Andere oefening</button><button class="btn ghost" id="dPad">Naar het leerpad</button></div>
+        <div id="dSes" class="small" hidden></div>
+        <div class="row"><button class="btn" id="dNext" hidden></button><button class="btn" id="dAgain">Nog een ronde</button><button class="btn ghost" id="dSetup">Andere oefening</button><button class="btn ghost" id="dPad">Naar het leerpad</button></div>
       </div>
     </section>
 
     <section id="v-stat" hidden>
-      <p class="muted small" style="max-width:65ch">Score = aandeel goed over je laatste 20 antwoorden, pas volledig geteld vanaf 10 antwoorden. De tijd is het gemiddelde per antwoord of per noot.</p>
+      <p class="muted small" style="max-width:65ch">Score = je laatste 20 antwoorden, pas volledig geteld vanaf 10. Goed binnen de norm telt heel, goed maar te traag telt half. De tijd is het gemiddelde per antwoord of per noot. Bij 85% is een oefening af en komt hij terug na 1, 3, 7, 14 en 30 dagen.</p>
       <div class="tw" id="statTable"></div>
       <div class="row"><button class="btn ghost" id="statReset">Voortgang wissen</button><span id="statConfirm" class="row"></span></div>
     </section>
@@ -408,7 +413,7 @@ const lensCount={all:0,pos:5,nps:7,set:4,str:6};
 
 /* ================= opslag ================= */
 const SK='halskaart.v1';
-let store={stats:{},err:{},cfg:null,ui:{}};
+let store={stats:{},err:{},cfg:null,ui:{},rev:{},days:{}};
 try{const raw=localStorage.getItem(SK);if(raw)store=Object.assign(store,JSON.parse(raw));}catch(e){}
 function save(){try{localStorage.setItem(SK,JSON.stringify(store));}catch(e){}}
 const cfg=Object.assign({root:9,fid:'pmin',lens:{t:'pos',i:0},lay:'all',lab:'deg'},store.cfg||{});
@@ -416,7 +421,21 @@ if(!F[cfg.fid])cfg.fid='pmin';
 const ui=Object.assign({drill:'trap',rk:true,rp:true,hint:true,auto:true,sound:true,gate:40},store.ui||{});
 function saveCfg(){store.cfg=cfg;store.ui=ui;save();}
 function rec(k,ok,ms){const a=store.stats[k]||(store.stats[k]=[]);a.push([ok?1:0,Math.round(ms)]);if(a.length>20)a.shift();save();}
-function score(k){const a=store.stats[k];if(!a||!a.length)return 0;return a.reduce((x,r)=>x+r[0],0)/a.length*Math.min(1,a.length/10);}
+/* De norm: goed én vlot. Tijdsgrens in seconden per antwoord of per noot. Goed maar te traag telt voor de helft. */
+const LIM={naam:3,vind:2.5,trap:4,zoek:3,bouw:2.5,herken:6,wissel:3.5,hoor:5,hvind:7,hspeel:9,gnoot:5,gtrap:6,gloop:1.5,gwissel:1.5,jam:8};
+const limOf=k=>(LIM[String(k).split('|')[0]]||5)*1000;
+const pts=(k,r)=>r[0]?(r[1]<=limOf(k)?1:.5):0;
+function score(k){const a=store.stats[k];if(!a||!a.length)return 0;return a.reduce((x,r)=>x+pts(k,r),0)/a.length*Math.min(1,a.length/10);}
+/* Herhaling over dagen: wat je gehaald hebt komt terug na 1, 3, 7, 14 en 30 dagen. Een slechte herhaling begint weer bij 1. */
+const dayNo=()=>{const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*60000)/864e5);};
+const IVS=[1,3,7,14,30];
+const isDue=k=>!!store.rev[k]&&store.rev[k].due<=dayNo();
+function review(k,roundPts){const t=dayNo(),r=store.rev[k],ok=score(k)>=.85;
+  if(!ok){if(r)store.rev[k]={i:0,due:t+1};}
+  else if(!r)store.rev[k]={i:0,due:t+1};
+  else if(r.due<=t){if(roundPts>=.85){const i=Math.min(r.i+1,IVS.length-1);store.rev[k]={i,due:t+IVS[i]};}else store.rev[k]={i:0,due:t+1};}
+  store.days[t]=1;for(const d in store.days)if(+d<t-90)delete store.days[d];save();}
+function streak(){let t=dayNo(),n=0;if(!store.days[t])t--;while(store.days[t]){n++;t--;}return n;}
 
 /* ================= hals tekenen ================= */
 function board(o){
@@ -631,6 +650,10 @@ function qctx(fid,forcePos){
   return{root,fid,L:getLens(fid,root,lens)};}
 const kn=c=>`${rn(c.root,c.fid)} ${F[c.fid].n.toLowerCase()}`;
 const roots=c=>c.L.notes.filter(n=>n.iv===0).map(n=>nd(n,c.fid,'deg'));
+/* twee buurposities van hetzelfde materiaal, met hun vensters */
+function pair(fid){const root=run.rk?rnd(12):cfg.root,i=run.rp?rnd(4):Math.min(run.lens.t==='pos'?(run.lens.i||0):0,3);
+  const A=getLens(fid,root,{t:'pos',i}),B=getLens(fid,root,{t:'pos',i:i+1});
+  return{root,fid,A,B,i,L:B,hi:Math.max(MAXF,B.win.end+1),wins:[{start:A.win.start,end:A.win.end,label:'positie '+(i+1)},{start:B.win.start,end:B.win.end,label:'positie '+(i+2)}]};}
 /* Op gehoor in een positie: één grondtoon is het vertrekpunt. Dat is de dichtstbijzijnde grondtoon onder de gevraagde noot
    (ligt de noot onder alle grondtonen, dan de laagste). Die krijgt een ring en klinkt vóór de noot; de andere grondtonen staan er vaag bij. */
 function refRoot(c,n){const rs=c.L.notes.filter(x=>x.iv===0&&x.midi!==n.midi).sort((a,b)=>a.midi-b.midi),onder=rs.filter(x=>x.midi<n.midi);return onder.length?onder[onder.length-1]:rs[0]||null;}
@@ -664,6 +687,17 @@ const DR={
     if(run.lens.t==='set'&&F[c.fid].iv.length===3){const ss=[...new Set(up.map(n=>n.s))],by=ss.map(x=>up.filter(n=>n.s===x));
       if(by.every(a=>a.length===by[0].length))up=by[0].flatMap((_,k)=>by.map(a=>a[k]));}
     return{type:'play',prompt:`Loop <em>${kn(c)}</em> in ${c.L.name}, omhoog en terug`,win:c.L.win,hi:c.L.hi,dots:run.hint?c.L.notes.map(n=>nd(n,c.fid,'deg',{cls:'ghost'})):roots(c),seq:up.concat(up.slice(0,-1).reverse()),guide:run.hint,lab:x=>nd(x,c.fid,'deg'),ek:c.fid+'l'};}},
+  /* ---- posities verbinden: altijd twee buurposities naast elkaar ---- */
+  wissel:{n:'Vormwissel',d:'Een noot in de ene positie is omcirkeld. Tik dezelfde trap in de volgende positie.',fixlens:'pos',make(){const c=pair(run.fid);let n,T,k=0;
+    do{n=wpick(c.A.notes,x=>c.fid+x.iv);T=c.B.notes.filter(x=>x.iv===n.iv&&!(x.s===n.s&&x.f===n.f));}while(!T.length&&++k<40);
+    const seen=new Set([key(n),...T.map(key)]),rs=[];for(const x of c.A.notes.concat(c.B.notes))if(x.iv===0&&!seen.has(key(x))){seen.add(key(x));rs.push(nd(x,c.fid,'deg'));}
+    return{type:'tap',prompt:`<em>${kn(c)}</em>: tik elke <em>${deg(c.fid,n.iv)}</em> in positie ${c.i+2}`,wins:c.wins,win:c.B.win,hi:c.hi,dots:rs.concat([nd(n,c.fid,'deg',{ring:'cur'})]),
+      targets:T,lab:x=>nd(x,c.fid,'deg'),ek:c.fid+n.iv,inF:(s,f)=>mod(OPEN[s]+f-c.root)===n.iv};}},
+  gwissel:{n:'Positiewissel',d:'Loop de ene positie omhoog en de volgende positie omlaag. De app volgt je.',gt:1,fixlens:'pos',make(){const c=pair(run.fid);
+    const up=c.A.notes.slice().sort((a,b)=>a.s-b.s||a.f-b.f),dn=c.B.notes.slice().sort((a,b)=>b.s-a.s||b.f-a.f),seen=new Set(),all=[];
+    for(const x of c.A.notes.concat(c.B.notes))if(!seen.has(key(x))){seen.add(key(x));all.push(x);}
+    return{type:'play',prompt:`<em>${kn(c)}</em>: positie ${c.i+1} omhoog, positie ${c.i+2} omlaag`,wins:c.wins,hi:c.hi,dots:run.hint?all.map(x=>nd(x,c.fid,'deg',{cls:'ghost'})):all.filter(x=>x.iv===0).map(x=>nd(x,c.fid,'deg')),
+      seq:up.concat(dn[0].midi===up[up.length-1].midi?dn.slice(1):dn),guide:run.hint,lab:x=>nd(x,c.fid,'deg'),ek:c.fid+'w'};}},
   /* ---- op gehoor: de toonsoort staat de hele ronde vast, zodat je trappen leert horen en geen losse afstanden ---- */
   hoor:{n:'Hoor de trap',d:'De toonsoort klinkt, daarna één noot. Welke trap hoor je? Alleen luisteren, geen gitaar nodig.',ear:1,nolens:1,make(){const e=run.ear,f=F[run.fid];
     let iv;do{iv=wpick(f.iv,x=>'e'+run.fid+x);}while(f.iv.length>2&&iv===e.last);e.last=iv;
@@ -684,22 +718,22 @@ const DR={
       seq:[n],lab:x=>nd(x,c.fid,'deg'),play:ref?[ref.midi,n.midi]:[n.midi],ek:'e'+c.fid+n.iv};}},
   jam:{n:'Landen op de drone',d:'Vrij spelen over een drone. De app toont live welke trap je speelt en geeft landingsdoelen.',gt:1,jam:1}
 };
-const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${DR[d].nolens?'all':lt}`;
+const statKey=(d,fid,lt)=>DR[d].free?d:`${d}|${fid}|${DR[d].nolens?'all':DR[d].fixlens||lt}`;
 /* lengte van een ronde: zelf gekozen per oefening, anders 10 (5 bij de oefeningen waarin je een hele vorm bouwt of loopt) */
 const REPS=[5,10,15,20,30,40,50];
-const ROUND=d=>(ui.reps&&ui.reps[d])||(d==='bouw'||d==='gloop'?5:10);
+const ROUND=d=>(ui.reps&&ui.reps[d])||(d==='bouw'||d==='gloop'?5:d==='gwissel'?3:10);
 
 function renderSetup(){
   const grp=[['Op scherm',k=>!DR[k].gt&&!DR[k].ear],['Op gehoor',k=>DR[k].ear],['Op gitaar',k=>DR[k].gt&&!DR[k].ear]];
   $('prEx').innerHTML=grp.map(([t,fn])=>`<div class="exgrp"><span class="lbl">${t}</span><div class="exlist">${Object.keys(DR).filter(fn).map(k=>`<button class="excard" data-ex="${k}" aria-pressed="${ui.drill===k}">${DR[k].ear&&DR[k].gt?'<span class="tag">met gitaar</span>':''}<b>${DR[k].n}</b><span>${DR[k].d}</span></button>`).join('')}</div></div>`).join('');
-  renderCtx($('prCtx'));$('prCtx').hidden=!!DR[ui.drill].free;$('prCtx').classList.toggle('nolens',!!DR[ui.drill].nolens);
+  renderCtx($('prCtx'));$('prCtx').hidden=!!DR[ui.drill].free;$('prCtx').classList.toggle('nolens',!!(DR[ui.drill].nolens||DR[ui.drill].fixlens));
   $('prHow').innerHTML=`<span class="lbl">Denkstap</span><p class="small">${HOW[ui.drill]}</p>`;
   $('prRk').checked=ui.rk;$('prRp').checked=ui.rp;$('prHint').checked=ui.hint;$('prAuto').checked=ui.auto;
-  const d=DR[ui.drill];$('prRk').parentElement.hidden=!!d.free||!!d.jam;$('prRp').parentElement.hidden=!!d.free||!!d.jam||!lensCount[cfg.lens.t];
-  $('prHint').parentElement.hidden=!['trap','zoek','gtrap','gloop','hspeel'].includes(ui.drill);
+  const d=DR[ui.drill];$('prRk').parentElement.hidden=!!d.free||!!d.jam;$('prRp').parentElement.hidden=!!d.free||!!d.jam||(!d.fixlens&&!lensCount[cfg.lens.t]);
+  $('prHint').parentElement.hidden=!['trap','zoek','gtrap','gloop','hspeel','gwissel'].includes(ui.drill);
   $('prRp').parentElement.hidden=$('prRp').parentElement.hidden||!!d.nolens;$('prRk').nextSibling.textContent=d.ear?' Willekeurige toonsoort per ronde':' Willekeurige toonsoort';
   $('prRepsRow').hidden=!!d.jam;$('prReps').innerHTML=REPS.map(n=>`<button class="chip k" data-reps="${n}" aria-pressed="${ROUND(ui.drill)===n}">${n}</button>`).join('');
-  $('prSum').textContent=d.jam?'Geen ronde: speel zo lang je wilt.':`Ronde van ${ROUND(ui.drill)}.`+(d.ear?' Zet je geluid aan; een koptelefoon werkt het best.':'');}
+  $('prSum').textContent=d.jam?'Geen ronde: speel zo lang je wilt.':`Ronde van ${ROUND(ui.drill)}. Af bij 85% goed binnen ${LIM[ui.drill]} s per ${['naam','trap','herken','hoor'].includes(ui.drill)?'antwoord':'noot'}.`+(d.ear?' Zet je geluid aan; een koptelefoon werkt het best.':'');}
 $('prEx').addEventListener('click',e=>{const b=e.target.closest('[data-ex]');if(b){ui.drill=b.dataset.ex;saveCfg();renderSetup();}});
 bindCtx($('prCtx'),renderSetup);
 $('prReps').addEventListener('click',e=>{const b=e.target.closest('[data-reps]');if(!b)return;ui.reps=ui.reps||{};ui.reps[ui.drill]=+b.dataset.reps;saveCfg();renderSetup();});
@@ -714,9 +748,9 @@ function mode(m){document.body.classList.toggle('running',m==='run');
     else{if(wake){wake.release().catch(()=>{});wake=null;}if(document.fullscreenElement&&document.exitFullscreen&&!window.matchMedia('(display-mode: fullscreen)').matches)document.exitFullscreen().catch(()=>{});}}catch(e){}
   $('prSetup').hidden=m!=='setup';$('prRun').hidden=m!=='run';$('prDone').hidden=m!=='done';}
 
-function startRound(){
+function startRound(n){
   Object.assign(run,{drill:ui.drill,fid:cfg.fid,lens:Object.assign({},cfg.lens),rk:ui.rk,rp:ui.rp,hint:ui.hint,i:0,res:[],active:true,jam:null,ear:null,muteUntil:0});
-  run.key=statKey(run.drill,run.fid,run.lens.t);run.n=ROUND(run.drill);
+  run.key=statKey(run.drill,run.fid,run.lens.t);run.n=typeof n==='number'?n:ROUND(run.drill);
   const d=DR[run.drill];mode('run');$('runHowT').textContent=HOW[run.drill];$('prMic').hidden=!d.gt;$('prLive').hidden=!d.jam;$('droneBtn').hidden=!d.jam;$('prChoices').innerHTML='';
   if(d.gt)micUI();
   $('earAgain').hidden=$('earRoot').hidden=!d.ear;
@@ -726,7 +760,7 @@ function startRound(){
   if(d.jam)startJam();else nextQ();}
 /* laat de vraag horen; de microfoon luistert pas weer als het voorbeeld is uitgeklonken */
 function earPlay(na){const q=run.q;if(!q||!q.play)return;const eind=Au.seq(q.play,.45,na||0);run.muteUntil=performance.now()+(eind+.9)*1000;return eind;}
-function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`<b style="color:var(--fg)">${d.n}</b>${d.free?'':' · '+esc(F[run.fid].n)+(d.nolens?'':' · '+LENS[run.lens.t])}`;
+function meta(){const d=DR[run.drill];$('prMeta').innerHTML=`${ses?`Sessie, onderdeel ${ses.i+1} · `:''}<b style="color:var(--fg)">${d.n}</b>${d.free?'':' · '+esc(F[run.fid].n)+(d.nolens||d.fixlens?'':' · '+LENS[run.lens.t])}`;
   $('prPips').innerHTML=d.jam?'':run.n>12?`<b style="color:var(--fg);font-variant-numeric:tabular-nums">${Math.min(run.i+1,run.n)} / ${run.n}</b><span class="muted">&nbsp;· ${run.res.filter(r=>r.ok).length} goed</span>`:Array.from({length:run.n},(_,i)=>`<span class="pip ${i<run.res.length?(run.res[i].ok?'ok':'no'):i===run.i?'now':''}"></span>`).join('');}
 function nextQ(){
   clearTimeout(run.tm);if(run.i>=run.n)return finishRound();
@@ -746,12 +780,14 @@ function drawQ(){const q=run.q;let dots=q.dots.slice();
     const seen=new Set();q.seq.slice(0,q.idx).forEach(n=>{if(!seen.has(key(n))){seen.add(key(n));dots.push(Object.assign(q.lab(n),q.seq.length>1?{}:{cls:'ok'}));}});
     const cur=q.seq[q.idx];if(cur&&(q.guide||q.done))dots.push(Object.assign(q.lab(cur),{ring:'cur'}));
     if(q.done&&!q.okEnd)q.seq.forEach(n=>dots.push(Object.assign(q.lab(n),{cls:'miss'})));}
-  $('prBoard').innerHTML=board({dots,xs:q.xs,win:q.win,hi:q.hi});}
+  $('prBoard').innerHTML=board({dots,xs:q.xs,win:q.wins?null:q.win,wins:q.wins,hi:q.hi});}
 function finish(ok,msg){const q=run.q;if(q.done)return;q.done=true;q.okEnd=ok;
   const per=q.type==='play'?Math.max(1,q.seq.length):q.type==='tap'?Math.max(1,q.targets.length):1,ms=(performance.now()-run.t0)/per;
   run.res.push({ok,ms});rec(run.key,ok,ms);if(q.ek){mark(q.ek,ok);save();}
   run.i++;meta();drawQ();$('prShow').hidden=true;
-  const fb=$('prFb');fb.className='fb '+(ok?'ok':'no');fb.textContent=(ok?'Goed. ':'Niet goed. ')+(msg||q.why||'');fb.title=fb.textContent;
+  const L=limOf(run.key),sec=(ms/1000).toFixed(1).replace('.',','),unit=per>1||q.type!=='choice'?' per noot':'';
+  const fb=$('prFb');fb.className='fb '+(ok?(ms>L?'slow':'ok'):'no');
+  fb.textContent=(ok?(ms>L?`Goed, maar traag: ${sec} s${unit} (norm ${L/1000} s). `:`Goed, ${sec} s${unit}. `):'Niet goed. ')+(msg||q.why||'');fb.title=fb.textContent;
   if(q.play&&!ok){Au.hush();const T=60+mod(run.ear.root);earPlay(.25);if(!q.ref)Au.note(T,.25+q.play.length*.45+.35,.7);}   // fout: nog eens de noot, dan de grondtoon
   if(ok&&ui.auto)run.tm=setTimeout(nextQ,q.play?1100:q.type==='choice'?800:1300);else{$('prNext').hidden=false;$('prNext').textContent=run.i>=run.n?'Afronden':'Volgende';}}
 $('prChoices').addEventListener('click',e=>{const b=e.target.closest('[data-c]'),q=run.q;if(!b||!q||q.done)return;
@@ -782,13 +818,20 @@ $('prNext').onclick=nextQ;
 $('earAgain').onclick=()=>{if(run.active&&run.q){Au.hush();earPlay(0);}};
 $('earRoot').onclick=()=>{if(run.active&&run.ear){Au.note(run.q&&run.q.ref?run.q.ref.midi:60+mod(run.ear.root),0,.8);run.muteUntil=performance.now()+1500;}};
 $('prShow').onclick=()=>finish(false,'Dit is het antwoord.');
-$('prStop').onclick=()=>stopRun(true);
+$('prStop').onclick=()=>{ses=null;stopRun(true);};
+$('dNext').onclick=()=>{if(ses)sesGo();};
+$('sesStart').onclick=sesStartNow;
+$('sesGt').onchange=e=>{ui.sesGt=e.target.checked;saveCfg();};
 function stopRun(toSetup,keepMic){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();Au.hush();if(!keepMic)Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
-function finishRound(){const ok=run.res.filter(r=>r.ok).length,avg=run.res.reduce((a,r)=>a+r.ms,0)/run.res.length/1000;
+function finishRound(){const ok=run.res.filter(r=>r.ok).length,avg=run.res.reduce((a,r)=>a+r.ms,0)/run.res.length/1000,L=limOf(run.key);
+  const vlot=run.res.filter(r=>r.ok&&r.ms<=L).length,rp=run.res.reduce((a,r)=>a+(r.ok?(r.ms<=L?1:.5):0),0)/run.res.length,unit=['tap','play'].includes(run.q.type)?'noot':'antwoord';
+  review(run.key,rp);
   stopRun(false,true);mode('done');$('dScore').textContent=`${ok} / ${run.res.length}`;
-  $('dText').textContent=`Gemiddeld ${avg.toFixed(1)} s per ${['tap','play'].includes(run.q.type)?'noot':'antwoord'}. Score voor deze oefening: ${Math.round(score(run.key)*100)}%.`;}
-$('dAgain').onclick=startRound;$('dSetup').onclick=()=>{Mic.stop();mode('setup');renderSetup();};$('dPad').onclick=()=>show('pad');
-$('prStart').onclick=()=>{Au.ensure();startRound();};
+  const r=store.rev[run.key],sc=Math.round(score(run.key)*100);
+  $('dText').textContent=`${vlot} daarvan binnen de norm van ${L/1000} s per ${unit}; je gemiddelde was ${avg.toFixed(1).replace('.',',')} s. Score voor deze oefening: ${sc}%.`+(r?` Herhalen over ${r.due-dayNo()} ${r.due-dayNo()===1?'dag':'dagen'}.`:sc<85?' Af bij 85%.':'');
+  sesAfter(ok,run.res.length);}
+$('dAgain').onclick=()=>startRound();$('dSetup').onclick=()=>{ses=null;Mic.stop();mode('setup');renderSetup();};$('dPad').onclick=()=>show('pad');
+$('prStart').onclick=()=>{Au.ensure();ses=null;startRound();};
 $('micBtn').onclick=()=>Mic.on?Mic.stop():Mic.start();
 $('micGate').value=ui.gate;$('micGate').oninput=e=>{ui.gate=+e.target.value;saveCfg();};
 $('droneBtn').onclick=()=>{const b=$('droneBtn');if(Au.dr){Au.stopDrone();b.classList.remove('on');b.textContent='Drone aan';}else{Au.drone(run.jam.c.root);b.classList.add('on');b.textContent='Drone uit';}};
@@ -828,34 +871,62 @@ const STAGES=[
  {t:'Noten en octaven',s:'Elke noot op elke snaar, zonder tellen',why:'Alles hierna hangt aan nootnamen. Het doel is elke noot binnen een seconde. De octaafvormen zijn je kapstok: wie één C weet, weet ze alle zes.',view:['pow','all'],dr:[['naam'],['vind'],['gnoot']]},
  {t:'Intervallen',s:'De vaste afstanden vanaf een grondtoon',why:'Een interval is een vaste afstand op de hals. Wie weet waar de 3, de 5 en de ♭7 liggen ten opzichte van een grondtoon, kan elke vorm zelf bouwen en hoeft hem niet te onthouden. Let op de B-snaar: daar schuift alles één fret op. Begin bij de powerchord, die ken je al.',view:['chr','str'],dr:[['zoek','pow','all'],['trap','chr','str'],['trap','chr','pos'],['gtrap','pow','all'],['hoor','pow','all']]},
  {t:'Drieklanken',s:'Drie noten op drie snaren, in drie liggingen',why:'De drieklank is het skelet onder elk akkoord en elke solo. Majeur is 1 3 5, mineur 1 ♭3 5. Op een set van drie snaren liggen de drie liggingen als een ketting langs de hals.',view:['maj','set'],dr:[['trap','maj','set'],['trap','min','set'],['bouw','maj','set'],['bouw','min','set'],['herken','maj','set'],['gloop','min','set'],['hoor','maj','all'],['hoor','min','all']]},
- {t:'CAGED',s:'Vijf akkoordvormen die de hals verdelen',why:'Vijf akkoordvormen bedekken samen de hele hals. Elke positie hierna hoort bij één van die vormen. Leer per vorm waar de grondtonen liggen en bouw de akkoordtonen eromheen.',view:['maj','pos'],dr:[['bouw','maj','pos'],['bouw','min','pos'],['trap','maj','pos'],['zoek','min','pos'],['gloop','maj','pos'],['hvind','maj','pos']]},
- {t:'Pentatonisch',s:'De drieklank plus twee noten',why:'Mineur pentatonisch is de mineur drieklank plus 4 en ♭7. De vijf boxen liggen elk rond een CAGED-vorm. Je kent de vormen al; leer ze nu als trappen, zodat je weet op welke noot je landt.',view:['pmin','pos'],dr:[['trap','pmin','pos'],['zoek','pmin','pos'],['bouw','pmin','pos'],['trap','pmaj','pos'],['gloop','pmin','pos'],['jam','pmin','pos'],['hoor','pmin','all'],['hvind','pmin','pos'],['hspeel','pmin','pos']]},
- {t:'Majeur en mineur',s:'Pentatonisch plus nog twee noten',why:'De volledige ladder is de pentatonische ladder met twee noten erbij. Eerst in de vijf posities, daarna met drie noten per snaar: dat patroon loopt gelijkmatig en is gemaakt voor snelheid.',view:['aeo','pos'],dr:[['bouw','aeo','pos'],['bouw','ion','pos'],['trap','aeo','pos'],['bouw','aeo','nps'],['gtrap','aeo','pos'],['gloop','aeo','nps'],['hoor','aeo','all'],['hoor','ion','all'],['hvind','aeo','pos'],['hspeel','aeo','pos']]},
+ {t:'CAGED',s:'Vijf akkoordvormen die de hals verdelen',why:'Vijf akkoordvormen bedekken samen de hele hals. Elke positie hierna hoort bij één van die vormen. Leer per vorm waar de grondtonen liggen en bouw de akkoordtonen eromheen.',view:['maj','pos'],dr:[['bouw','maj','pos'],['bouw','min','pos'],['trap','maj','pos'],['zoek','min','pos'],['gloop','maj','pos'],['hvind','maj','pos'],['wissel','maj','pos']]},
+ {t:'Pentatonisch',s:'De drieklank plus twee noten',why:'Mineur pentatonisch is de mineur drieklank plus 4 en ♭7. De vijf boxen liggen elk rond een CAGED-vorm. Je kent de vormen al; leer ze nu als trappen, zodat je weet op welke noot je landt.',view:['pmin','pos'],dr:[['trap','pmin','pos'],['zoek','pmin','pos'],['bouw','pmin','pos'],['trap','pmaj','pos'],['gloop','pmin','pos'],['jam','pmin','pos'],['hoor','pmin','all'],['hvind','pmin','pos'],['hspeel','pmin','pos'],['wissel','pmin','pos'],['gwissel','pmin','pos']]},
+ {t:'Majeur en mineur',s:'Pentatonisch plus nog twee noten',why:'De volledige ladder is de pentatonische ladder met twee noten erbij. Eerst in de vijf posities, daarna met drie noten per snaar: dat patroon loopt gelijkmatig en is gemaakt voor snelheid.',view:['aeo','pos'],dr:[['bouw','aeo','pos'],['bouw','ion','pos'],['trap','aeo','pos'],['bouw','aeo','nps'],['gtrap','aeo','pos'],['gloop','aeo','nps'],['hoor','aeo','all'],['hoor','ion','all'],['hvind','aeo','pos'],['hspeel','aeo','pos'],['wissel','aeo','pos']]},
  {t:'Arpeggio’s',s:'Akkoordtonen als landingsplaatsen',why:'Een arpeggio is een akkoord, noot voor noot gespeeld. Het zijn de noten waarop een solo goed landt. Een septiemakkoord is een drieklank met een 7 erbij.',view:['m7','pos'],dr:[['bouw','m7','pos'],['bouw','dom7','pos'],['trap','maj7','pos'],['herken','m7','pos'],['gloop','m7','pos'],['hoor','m7','all'],['hvind','dom7','pos']]},
  {t:'Modi',s:'Dezelfde vormen, één kleurnoot per modus',why:'Een modus is geen nieuwe vorm. Het is de pentatonische ladder die je kent, met twee noten erbij, waarvan er één de klank bepaalt. Dorisch is mineur met een 6, Phrygisch mineur met een ♭2, Mixolydisch majeur met een ♭7. Leer per modus die ene kleurnoot vinden en erop landen.',view:['dor','pos'],dr:[['zoek','dor','pos'],['trap','phr','pos'],['trap','mix','pos'],['herken','dor','pos'],['bouw','dor','pos'],['jam','dor','pos'],['jam','phr','pos'],['hoor','dor','all'],['hoor','phr','all'],['hoor','mix','all']]},
  {t:'Metal-kleuren',s:'Harmonisch mineur en Phrygisch dominant',why:'Harmonisch mineur is mineur met een grote 7. Phrygisch dominant is dezelfde ladder vanaf zijn vijfde trap. Samen geven ze de neoklassieke klank van Blackmore en veel powermetal. Ten opzichte van wat je al kent verschuift telkens één noot.',view:['hmin','pos'],dr:[['bouw','hmin','pos'],['trap','phd','pos'],['herken','hmin','pos'],['gloop','hmin','nps'],['jam','phd','pos'],['hoor','hmin','all'],['hoor','phd','all']]},
- {t:'De hele hals',s:'Posities loslaten en verbinden',why:'Nu de posities losser worden: speel langs één snaar, vind trappen over de hele hals en land op doelen terwijl de drone loopt. Dit is waar de losse vormen één kaart worden.',view:['aeo','all'],dr:[['zoek','aeo','all'],['trap','aeo','str'],['gloop','pmin','str'],['jam','aeo','all'],['hoor','chr','all'],['hspeel','aeo','all']]}
+ {t:'De hele hals',s:'Posities loslaten en verbinden',why:'Nu de posities losser worden: speel langs één snaar, vind trappen over de hele hals en land op doelen terwijl de drone loopt. Dit is waar de losse vormen één kaart worden.',view:['aeo','all'],dr:[['zoek','aeo','all'],['trap','aeo','str'],['gloop','pmin','str'],['jam','aeo','all'],['hoor','chr','all'],['hspeel','aeo','all'],['wissel','aeo','pos'],['gwissel','aeo','pos']]}
 ];
 const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
 const pKey=p=>statKey(p[0],p[1],p[2]);
-const pLabel=p=>DR[p[0]].free?DR[p[0]].n:`${DR[p[0]].n} · ${F[p[1]].n}${DR[p[0]].nolens?'':' · '+LENS[p[2]].toLowerCase()}`;
+const pLabel=p=>DR[p[0]].free?DR[p[0]].n:`${DR[p[0]].n} · ${F[p[1]].n}${DR[p[0]].nolens||DR[p[0]].fixlens?'':' · '+LENS[p[2]].toLowerCase()}`;
 const stageProg=st=>st.dr.reduce((a,p)=>a+Math.min(1,score(pKey(p))/0.85),0)/st.dr.length;
-function loadPreset(p){ui.drill=p[0];if(p[1]){cfg.fid=p[1];cfg.lens={t:p[2],i:0};}ui.rk=!DR[p[0]].jam;ui.rp=true;saveCfg();show('oef');}
-function renderPad(){
+/* ---- dagelijkse sessie: de onderdelen van vandaag achter elkaar, in korte rondes, tot ongeveer tien minuten ---- */
+let ses=null;
+const SREPS=d=>d==='bouw'||d==='gloop'?3:d==='gwissel'?2:d==='vind'?5:8,SMIN=10;
+const sesOk=p=>!DR[p[0]].jam&&(ui.sesGt||!DR[p[0]].gt);
+function sesStartNow(){Au.ensure();const pl=plan(),q=pl.cards.filter(c=>sesOk(c[1])).map(c=>c[1]);
+  /* aanvullen tot vier onderdelen met wat in je huidige stap nog open staat */
+  for(const p of STAGES[pl.cur].dr.concat(pl.uniq)){if(q.length>=4)break;if(sesOk(p)&&score(pKey(p))<.85&&!q.some(x=>pKey(x)===pKey(p)))q.push(p);}
+  if(!q.length)return;ses={q,i:0,t0:Date.now(),res:[],cur:pl.cur,base:q.length};sesGo();}
+function sesGo(){const p=ses.q[ses.i];ui.drill=p[0];if(p[1]){cfg.fid=p[1];cfg.lens={t:p[2],i:0};}ui.rk=true;ui.rp=true;saveCfg();
+  ses.go=true;show('oef');ses.go=false;startRound(SREPS(p[0]));}
+function sesAfter(ok,n){const dn=$('dNext'),box=$('dSes');
+  if(!ses){dn.hidden=true;box.hidden=true;$('dAgain').hidden=$('dSetup').hidden=false;return;}
+  ses.res.push([pLabel(ses.q[ses.i]),ok,n]);ses.i++;const min=(Date.now()-ses.t0)/60000;
+  /* nog tijd over en niets meer gepland: eerst wat in je stap nog open staat, anders dezelfde onderdelen nog een keer */
+  if(ses.i>=ses.q.length&&min<SMIN-2){const more=STAGES[ses.cur].dr.find(p=>sesOk(p)&&score(pKey(p))<.85&&!ses.q.some(x=>pKey(x)===pKey(p)));ses.q.push(more||ses.q[ses.i%ses.base]);}
+  const klaar=ses.i>=ses.q.length||min>=SMIN;
+  box.hidden=false;box.innerHTML=ses.res.map(r=>`<span>${esc(r[0])}: <b>${r[1]} / ${r[2]}</b></span>`).join('');
+  $('dAgain').hidden=$('dSetup').hidden=true;
+  if(klaar){dn.hidden=true;$('dScore').textContent='Sessie klaar';$('dText').textContent=`${ses.res.length} onderdelen in ${Math.max(1,Math.round(min))} minuten.`;ses=null;}
+  else{dn.hidden=false;dn.textContent='Volgende: '+pLabel(ses.q[ses.i]);$('dText').textContent=`${Math.max(1,Math.round(min))} van ${SMIN} minuten. `+$('dText').textContent;}}
+function loadPreset(p){ses=null;ui.drill=p[0];if(p[1]){cfg.fid=p[1];cfg.lens={t:p[2],i:0};}ui.rk=!DR[p[0]].jam;ui.rp=true;saveCfg();show('oef');}
+/* het plan voor vandaag: wat te herhalen is, je zwakste oefening, iets nieuws, iets op gehoor en iets met de gitaar */
+function plan(){
   const prog=STAGES.map(stageProg);let cur=prog.findIndex(v=>v<1);if(cur<0)cur=STAGES.length-1;
-  const st=STAGES[cur],cards=[];
-  const practised=[];STAGES.forEach((s,i)=>s.dr.forEach(p=>{const a=store.stats[pKey(p)];if(a&&a.length>=5&&i<=cur)practised.push(p);}));
+  const st=STAGES[cur],cards=[],has=p=>cards.some(c=>pKey(c[1])===pKey(p)),put=(l,p,sub)=>{if(p&&!has(p))cards.push([l,p,sub]);};
+  const all=STAGES.flatMap(x=>x.dr),uniq=[];for(const p of all)if(!uniq.some(q=>pKey(q)===pKey(p)))uniq.push(p);
+  const due=uniq.filter(p=>isDue(pKey(p))).sort((a,b)=>store.rev[pKey(a)].due-store.rev[pKey(b)].due);
+  due.slice(0,2).forEach(p=>put('Herhalen',p,'Gehaald, en vandaag weer aan de beurt'));
+  const practised=[];STAGES.forEach((x,i)=>x.dr.forEach(p=>{const a=store.stats[pKey(p)];if(a&&a.length>=5&&i<=cur)practised.push(p);}));
   practised.sort((a,b)=>score(pKey(a))-score(pKey(b)));
-  if(practised[0]&&score(pKey(practised[0]))<0.85)cards.push(['Opfrissen',practised[0],'Je zwakste oefening tot nu toe']);
-  const nw=st.dr.find(p=>!DR[p[0]].gt&&!DR[p[0]].ear&&score(pKey(p))<0.85&&p!==practised[0]);if(nw)cards.push(['Nieuw in stap '+ROMAN[cur],nw,st.t]);
+  if(practised[0]&&score(pKey(practised[0]))<0.85)put('Opfrissen',practised[0],'Je zwakste oefening tot nu toe');
+  put('Nieuw in stap '+ROMAN[cur],st.dr.find(p=>!DR[p[0]].gt&&!DR[p[0]].ear&&score(pKey(p))<0.85&&!has(p)),st.t);
   /* op gehoor zonder gitaar: een eigen spoor door het hele pad, zodat er altijd iets te luisteren valt */
-  const eard=STAGES.flatMap(x=>x.dr).filter(p=>DR[p[0]].ear&&!DR[p[0]].gt),er=eard.find(p=>score(pKey(p))<0.85)||eard[eard.length-1];
-  if(er)cards.push(['Op gehoor',er,'Alleen luisteren, met koptelefoon']);
-  const gt=st.dr.find(p=>DR[p[0]].gt&&score(pKey(p))<0.85)||st.dr.find(p=>DR[p[0]].gt);if(gt)cards.push(['Met de gitaar',gt,'Vijf minuten is genoeg']);
+  const eard=all.filter(p=>DR[p[0]].ear&&!DR[p[0]].gt);put('Op gehoor',eard.find(p=>score(pKey(p))<0.85&&!has(p))||eard[eard.length-1],'Alleen luisteren, met koptelefoon');
+  put('Met de gitaar',st.dr.find(p=>DR[p[0]].gt&&score(pKey(p))<0.85)||st.dr.find(p=>DR[p[0]].gt),'Vijf minuten is genoeg');
+  return{prog,cur,cards,due,uniq};}
+function renderPad(){
+  const {prog,cur,cards,due}=plan();
   $('today').innerHTML=cards.map((c,i)=>`<button class="tcard" data-tc="${i}"><span class="lbl">${c[0]}</span><b>${esc(pLabel(c[1]))}</b><span class="muted small">${esc(c[2])}</span></button>`).join('');
   $('today').onclick=e=>{const b=e.target.closest('[data-tc]');if(b)loadPreset(cards[+b.dataset.tc][1]);};
+  const sk=streak();$('sesGt').checked=!!ui.sesGt;
+  $('sesInfo').textContent=[sk?`Reeks: ${sk} ${sk===1?'dag':'dagen'}`:'',due.length?`${due.length} te herhalen`:''].filter(Boolean).join(' · ');
   $('stages').innerHTML=STAGES.map((s,i)=>`<details class="stage"${i===cur?' open':''}><summary><span class="no">${ROMAN[i]}</span><h3>${s.t}<small>${s.s}</small></h3><span class="bar${prog[i]>=1?' done':''}" title="${Math.round(prog[i]*100)}%"><span style="width:${Math.round(prog[i]*100)}%"></span></span></summary>
-    <div class="sbody"><p>${s.why}</p><div class="plist">${s.dr.map((p,j)=>{const v=score(pKey(p));return`<button class="pchip" data-st="${i}" data-p="${j}"><i class="m ${v>=.85?'f':v>0?'h':''}"></i><span>${esc(pLabel(p))}</span>${DR[p[0]].ear?'<span class="tag">gehoor</span>':''}${DR[p[0]].gt?'<span class="tag">gitaar</span>':''}</button>`;}).join('')}</div>
+    <div class="sbody"><p>${s.why}</p><div class="plist">${s.dr.map((p,j)=>{const v=score(pKey(p));return`<button class="pchip" data-st="${i}" data-p="${j}"><i class="m ${isDue(pKey(p))?'d':v>=.85?'f':v>0?'h':''}"${isDue(pKey(p))?' title="Vandaag herhalen"':''}></i><span>${esc(pLabel(p))}</span>${DR[p[0]].ear?'<span class="tag">gehoor</span>':''}${DR[p[0]].gt?'<span class="tag">gitaar</span>':''}</button>`;}).join('')}</div>
     <div class="row"><button class="btn" data-les="${i}">Uitleg</button><button class="btn ghost" data-view="${i}">Bekijk op de hals</button></div></div></details>`).join('');}
 $('stages').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.p!=null)loadPreset(STAGES[+b.dataset.st].dr[+b.dataset.p]);
@@ -960,6 +1031,8 @@ const LESSONS=[
    b:()=>[LB('min',9,{t:'all'})]}]
 ];
 const HOW={
+ wissel:'Kijk welke grondtoon de twee posities delen. Leg vanaf die grondtoon dezelfde intervalvorm in de nieuwe positie. Zo zie je dat de volgende positie geen nieuwe vorm is, maar dezelfde trappen een stukje verder.',
+ gwissel:'Schuif op de hoge e-snaar door naar de volgende positie en loop die omlaag. Kijk tijdens het schuiven naar de grondtoon van de nieuwe positie, niet naar je vingers.',
  hoor:'Luister eerst naar de toonsoort tot je de grondtoon kunt neuriën. Hoor dan hoe de noot zich daartoe verhoudt: rust hij (1, 3, 5) of wil hij ergens heen? Zing in gedachten vanaf de noot terug naar de grondtoon. Gebruik de knop Grondtoon zo vaak je wilt.',
  hvind:'Je hoort eerst de omcirkelde grondtoon, dan de noot. Benoem in je hoofd welke trap je hoort en leg die afstand vanaf de omcirkelde grondtoon op de hals. Klinkt de noot lager dan de grondtoon, dan ligt hij eronder. Raden op de hals leert je niets; de eerste tik telt.',
  hspeel:'Je hoort eerst de grondtoon, dan de noot. Zing of neurie de noot eerst na. Zoek hem dan op de gitaar. In het begin mag je tastend zoeken; het doel is dat je hem in één keer pakt omdat je de trap herkent.',
@@ -990,25 +1063,25 @@ $('lesBody').addEventListener('click',e=>{const b=e.target.closest('button');if(
   if(b.dataset.go)show(b.dataset.go);if(b.dataset.lp!=null)loadPreset(STAGES[lesI].dr[+b.dataset.lp]);if(b.dataset.ln!=null){lesI=+b.dataset.ln;renderLes();}});
 
 /* ================= voortgang ================= */
-function renderStat(){
+function renderStat(){const t=dayNo();
   const rows=Object.keys(store.stats).map(k=>{const a=store.stats[k],[d,fid,lt]=k.split('|');if(!DR[d])return'';
-    const acc=a.reduce((x,r)=>x+r[0],0)/a.length,ms=a.reduce((x,r)=>x+r[1],0)/a.length;
-    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+(DR[d].nolens?'':' · '+LENS[lt].toLowerCase()):'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n">${(ms/1000).toFixed(1)} s</td><td class="n">${Math.round(score(k)*100)}%</td></tr>`;}).join('');
-  $('statTable').innerHTML=rows?`<table><thead><tr><th>Oefening</th><th>Materiaal</th><th>Antwoorden</th><th>Goed</th><th>Tijd</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table>`
+    const acc=a.reduce((x,r)=>x+r[0],0)/a.length,ms=a.reduce((x,r)=>x+r[1],0)/a.length,L=limOf(k),r=store.rev[k];
+    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+(DR[d].nolens||DR[d].fixlens?'':' · '+LENS[lt].toLowerCase()):'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n"${ms>L?' style="color:var(--accent)"':''}>${(ms/1000).toFixed(1).replace('.',',')} s</td><td class="n">${L/1000} s</td><td class="n">${Math.round(score(k)*100)}%</td><td class="n">${r?(r.due<=t?'vandaag':'over '+(r.due-t)+' d'):'–'}</td></tr>`;}).join('');
+  $('statTable').innerHTML=rows?`<table><thead><tr><th>Oefening</th><th>Materiaal</th><th>Antwoorden</th><th>Goed</th><th>Tijd</th><th>Norm</th><th>Score</th><th>Herhalen</th></tr></thead><tbody>${rows}</tbody></table>`
     :'<p class="muted">Nog niets geoefend. Kies een oefening in het leerpad; je resultaten verschijnen hier.</p>';
   $('statConfirm').innerHTML='';}
 $('statReset').onclick=()=>{$('statConfirm').innerHTML='<span class="small">Alle resultaten op dit apparaat wissen?</span><button class="chip" id="statYes">Ja, wissen</button><button class="chip" id="statNo">Nee</button>';
-  $('statYes').onclick=()=>{store.stats={};store.err={};save();renderStat();};$('statNo').onclick=()=>{$('statConfirm').innerHTML='';};};
+  $('statYes').onclick=()=>{store.stats={};store.err={};store.rev={};store.days={};save();renderStat();};$('statNo').onclick=()=>{$('statConfirm').innerHTML='';};};
 
 /* ================= navigatie ================= */
 const VIEWS=['pad','hals','oef','stat'],TABS=['pad','hals','oef','stat','les'];
-function show(v){if(run.active)stopRun(false);Mic.stop();Au.stopDrone();if(Au.ctx)Au.hush();
+function show(v){if(ses&&!ses.go)ses=null;if(run.active)stopRun(false);Mic.stop();Au.stopDrone();if(Au.ctx)Au.hush();
   for(const k of TABS)$('v-'+k).hidden=k!==v;for(const k of VIEWS)$('t-'+k).setAttribute('aria-selected',k===v||(v==='les'&&k==='pad'));
   if(v==='les')renderLes();
   if(v==='pad')renderPad();if(v==='hals')renderExplore();if(v==='oef'){mode('setup');renderSetup();}if(v==='stat')renderStat();
   saveCfg();}
 for(const k of VIEWS)$('t-'+k).onclick=()=>show(k);
-window.__hk={Au,spell,rn,jamHold,heard,micUI,Mic,grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
+window.__hk={plan,review,isDue,dayNo,streak,score,LIM,get store(){return store},get ses(){return ses},Au,spell,rn,jamHold,heard,micUI,Mic,grip,GRIP,cagedOrder,LESSONS,HOW,F,getLens,posLos,shapeName,deg,DR,STAGES,run,cfg,ui,NOTE,OPEN};
 /* de handleiding staat als los bestand naast de app; binnen de Claude-weergave is die er niet */
 if(window.self===window.top&&/^https?:$/.test(location.protocol))$('manLink').hidden=false;
 show('pad');
