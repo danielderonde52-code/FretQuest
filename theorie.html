@@ -536,7 +536,7 @@ function board(o){
   const bx0=lo===0?cols[0].x1:cols[0].x0,bx1=cols[cols.length-1].x1;
   let g=`<rect class="wood" x="${bx0}" y="${T}" width="${bx1-bx0}" height="${RH*6}" rx="3"/>`;
   for(const c of cols){const cx=(c.x0+c.x1)/2;
-    const dia=cy=>`<path class="inlay" d="M${cx-7.5} ${cy}L${cx} ${cy-10}L${cx+7.5} ${cy}L${cx} ${cy+10}Z"/>`;
+    const dia=cy=>`<circle class="inlay" cx="${cx}" cy="${cy}" r="7.5"/>`;
     if([3,5,7,9,15,17,19].includes(c.f))g+=dia(T+RH*3);
     if(c.f===12)g+=dia(T+RH*1.5)+dia(T+RH*4.5);
     if(c.f>=1)g+=`<line class="wire" x1="${c.x1}" y1="${T}" x2="${c.x1}" y2="${T+RH*6}"/>`;
