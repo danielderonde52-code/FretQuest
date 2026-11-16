@@ -1175,7 +1175,7 @@ function tourEnd(){tourI=-1;$('tour').hidden=true;ui.tour=1;show('pad');window.s
 $('tourNext').onclick=()=>tourGo(tourI+1);$('tourBack').onclick=()=>tourGo(tourI-1);$('tourSkip').onclick=tourEnd;$('tourBtn').onclick=()=>tourGo(0);
 window.addEventListener('resize',tourPlace);
 document.addEventListener('keydown',e=>{if(tourI<0)return;if(e.key==='Escape')tourEnd();if(e.key==='ArrowRight')tourGo(tourI+1);if(e.key==='ArrowLeft')tourGo(tourI-1);});
-if(!ui.tour&&!Object.keys(store.stats||{}).length)tourGo(0);
+if(!ui.tour)tourGo(0);
 })();
 </script>
 
