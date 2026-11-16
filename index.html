@@ -247,6 +247,24 @@ h1,h2,h3,.brand,.tabs button,.lbl,.btn,.stage h3,.stage .no,.tcard b,.excard b,.
 .info .f,.lesb figcaption,.micnote{font-family:var(--f-b)}
 .btn.on{color:#0c1a11}
 html.pl body.running .btn{font-size:.92rem}
+/* ---- rondleiding ---- */
+#tour{position:fixed;inset:0;z-index:60}
+#tourHole{position:fixed;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 200vmax rgba(6,10,9,.72);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
+#tourHole.none{left:50%!important;top:50%!important;width:0!important;height:0!important;border:0}
+#tourCard{position:fixed;left:50%;transform:translateX(-50%);width:min(560px,calc(100vw - 24px));background:var(--raise);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#tourCard h3{margin:0;font-family:var(--f-d);font-size:1.25rem;font-weight:400}
+#tourCard p{margin:0;line-height:1.45}
+#tourCard .trow{display:flex;align-items:center;gap:8px}
+#tourCard .trow .sp{flex:1}
+#tourCard .tdots{display:flex;gap:5px}
+#tourCard .tdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+#tourCard .tdots i.on{background:var(--accent)}
+#tourSkip{background:none;border:0;color:var(--muted);text-decoration:underline;padding:8px 4px;font:inherit;font-size:.9rem}
+html.pl #tourCard{padding:9px 14px;gap:4px;width:min(620px,calc(100vw - 24px))}
+html.pl #tourCard h3{font-size:1.05rem}
+html.pl #tourCard p{font-size:.9rem;line-height:1.35}
+html.pl #tourCard .btn{min-height:34px;padding:4px 14px;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){#tourHole{transition:none}}
 </style>
 
 <div class="app">
@@ -267,6 +285,7 @@ html.pl body.running .btn{font-size:.92rem}
       <div class="today" id="today"></div>
       <div><span class="lbl">Het pad</span><p class="muted small">Elke stap bouwt op de vorige, maar alles staat open: kies gerust zelf. De app houdt per oefening bij hoe stevig hij zit en stelt daar elke dag een andere mix op af.</p><div class="lvkey" style="margin-top:6px"><span><i></i>nieuw</span><span><i style="background:conic-gradient(var(--accent) 25%,transparent 0)"></i>verkennen</span><span><i style="background:conic-gradient(var(--accent) 50%,transparent 0)"></i>groeiend</span><span><i style="background:conic-gradient(var(--accent) 75%,transparent 0)"></i>stevig</span><span><i style="background:var(--ok)"></i>vlot</span></div><p id="manLink" hidden style="margin-top:8px"><a class="btn ghost" href="theorie.html" style="display:inline-flex;align-items:center;text-decoration:none">Theoriehandleiding</a></p></div>
       <div class="stages" id="stages"></div>
+      <div class="row"><button class="btn ghost" id="tourBtn">Rondleiding bekijken</button></div>
     </section>
 
     <section id="v-les" hidden><div id="lesBody" style="display:grid;gap:14px"></div></section>
@@ -335,6 +354,13 @@ html.pl body.running .btn{font-size:.92rem}
       <div class="row"><button class="btn ghost" id="statReset">Voortgang wissen</button><span id="statConfirm" class="row"></span></div>
     </section>
   </main>
+</div>
+<div id="tour" hidden role="dialog" aria-modal="true" aria-labelledby="tourH">
+  <div id="tourHole"></div>
+  <div id="tourCard">
+    <h3 id="tourH"></h3><p id="tourP"></p>
+    <div class="trow"><span class="tdots" id="tourDots"></span><span class="sp"></span><button id="tourSkip">Overslaan</button><button class="btn ghost" id="tourBack">Terug</button><button class="btn" id="tourNext">Volgende</button></div>
+  </div>
 </div>
 
 <script>
@@ -1120,6 +1146,36 @@ window.__hk={plan,review,isDue,dayNo,streak,score,LIM,level,vlot,LVL,get store()
 /* de handleiding staat als los bestand naast de app; binnen de Claude-weergave is die er niet */
 if(window.self===window.top&&/^https?:$/.test(location.protocol))$('manLink').hidden=false;
 show('pad');
+/* ================= rondleiding bij het eerste gebruik ================= */
+const TOUR=[
+ {h:'Welkom bij FretQuest',p:'FretQuest leert je de hals van je gitaar zien als één kaart: noten, intervallen, drieklanken, ladders en modi, stap voor stap. Deze rondleiding duurt een minuut.'},
+ {v:'pad',a:()=>document.querySelector('#stages .stage'),h:'Het leerpad',p:'Tien stappen, van losse noten tot de hele hals. Open een stap voor de uitleg en de oefeningen die erbij horen. Niets zit op slot: je mag overal beginnen.'},
+ {v:'pad',a:()=>$('today'),h:'Vandaag',p:'Elke dag stelt de app een afwisselende mix voor, afgestemd op hoe ver je bent. Tik op een kaart, of start de sessie van tien minuten: die doet ze achter elkaar.'},
+ {v:'hals',a:()=>$('exBoard'),h:'De hals',p:'Hier bekijk je elk akkoord en elke ladder in elke toonsoort: over de hele hals, per positie of per snaar. De kleur toont de rol van een noot: grondtoon, terts, kwint of septiem.'},
+ {v:'oef',a:()=>$('prEx'),h:'Oefenen',p:'Drie soorten oefeningen: op het scherm, op gehoor (met koptelefoon) en met je gitaar, waarbij de microfoon meeluistert. Kies zelf wat je oefent en hoeveel vragen een ronde heeft.'},
+ {v:'stat',a:()=>$('v-stat'),h:'Voortgang',p:'Per oefening zie je een niveau: verkennen, groeiend, stevig of vlot. Er is geen norm die je moet halen. De app gebruikt het niveau alleen om te kiezen wat hij je morgen aanbiedt.'},
+ {v:'pad',a:()=>document.querySelector('#stages .stage'),h:'Aan de slag',p:'Begin bij stap I: lees de uitleg en doe de eerste oefening. Tien minuten per dag werkt beter dan een uur per week. Op een telefoon werkt de app het prettigst liggend.',end:'Begin'}
+];
+let tourI=-1;
+function tourPlace(){if(tourI<0)return;const st=TOUR[tourI],hole=$('tourHole'),card=$('tourCard'),el=st.a&&st.a(),vh=window.innerHeight,vw=window.innerWidth;
+  if(!el){hole.className='none';card.style.top='50%';card.style.bottom='auto';card.style.transform='translate(-50%,-50%)';return;}
+  hole.className='';card.style.transform='translateX(-50%)';card.style.top='auto';card.style.bottom='10px';
+  const ch=card.offsetHeight,room=vh-ch-26;
+  window.scrollTo(0,Math.max(0,el.getBoundingClientRect().top+window.scrollY-10));
+  const r=el.getBoundingClientRect(),top=Math.max(6,r.top-4),bot=Math.min(room,r.bottom+4),l=Math.max(4,r.left-4),rt=Math.min(vw-4,r.right+4);
+  if(bot-top<30){hole.className='none';return;}
+  hole.style.left=l+'px';hole.style.top=top+'px';hole.style.width=(rt-l-4)+'px';hole.style.height=(bot-top-4)+'px';}
+function tourGo(i){if(i<0)return;if(i>=TOUR.length)return tourEnd();tourI=i;const st=TOUR[i];
+  if(st.v)show(st.v);$('tour').hidden=false;
+  $('tourH').textContent=st.h;$('tourP').textContent=st.p;
+  $('tourDots').innerHTML=TOUR.map((_,k)=>`<i${k===i?' class="on"':''}></i>`).join('');
+  $('tourBack').hidden=i===0;$('tourSkip').hidden=i===TOUR.length-1;$('tourNext').textContent=st.end||(i===0?'Start':'Volgende');
+  tourPlace();$('tourNext').focus();}
+function tourEnd(){tourI=-1;$('tour').hidden=true;ui.tour=1;show('pad');window.scrollTo(0,0);}
+$('tourNext').onclick=()=>tourGo(tourI+1);$('tourBack').onclick=()=>tourGo(tourI-1);$('tourSkip').onclick=tourEnd;$('tourBtn').onclick=()=>tourGo(0);
+window.addEventListener('resize',tourPlace);
+document.addEventListener('keydown',e=>{if(tourI<0)return;if(e.key==='Escape')tourEnd();if(e.key==='ArrowRight')tourGo(tourI+1);if(e.key==='ArrowLeft')tourGo(tourI-1);});
+if(!ui.tour&&!Object.keys(store.stats||{}).length)tourGo(0);
 })();
 </script>
 
