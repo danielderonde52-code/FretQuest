@@ -1172,11 +1172,11 @@ function tourGo(i){if(i<0)return;if(i>=TOUR.length)return tourEnd();tourI=i;cons
   $('tourDots').innerHTML=TOUR.map((_,k)=>`<i${k===i?' class="on"':''}></i>`).join('');
   $('tourBack').hidden=i===0;$('tourSkip').hidden=i===TOUR.length-1;$('tourNext').textContent=st.end||(i===0?'Start':'Volgende');
   tourPlace();$('tourNext').focus();}
-function tourEnd(){tourI=-1;$('tour').hidden=true;ui.tour=1;show('pad');window.scrollTo(0,0);}
+function tourEnd(){tourI=-1;$('tour').hidden=true;ui.tour=2;show('pad');window.scrollTo(0,0);}
 $('tourNext').onclick=()=>tourGo(tourI+1);$('tourBack').onclick=()=>tourGo(tourI-1);$('tourSkip').onclick=tourEnd;$('tourBtn').onclick=()=>tourGo(0);
 window.addEventListener('resize',tourPlace);
 document.addEventListener('keydown',e=>{if(tourI<0)return;if(e.key==='Escape')tourEnd();if(e.key==='ArrowRight')tourGo(tourI+1);if(e.key==='ArrowLeft')tourGo(tourI-1);});
-if(!ui.tour)tourGo(0);
+if((ui.tour||0)<2)tourGo(0);
 })();
 </script>
 
