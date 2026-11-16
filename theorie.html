@@ -13,7 +13,7 @@
   --accent:#c2a15a; --accent-fg:#14100b;
   --c1:#e0b84f; --c3:#c77b4a; --c5:#cfd2d6; --c7:#6fa08c; --ct:#e4dcc8; --ch:#ef6f52;
   --ok:#7ccf98; --bad:#ea6f62;
-  --wood:#1d130d; --fret:#a48a52; --string:#d2c8ae; --inlay:#3b2c20; --dot-ink:#14100b; --ghost:#6b6558;
+  --wood:#1d130d; --fret:#a48a52; --string:#d2c8ae; --inlay:#8a765c; --dot-ink:#14100b; --ghost:#6b6558;
   --f-d:"Marcellus",Georgia,"Times New Roman",serif;
   --f-sc:"Marcellus SC","Marcellus",Georgia,serif;
   --f-b:"Spectral",Georgia,"Times New Roman",serif;
@@ -536,7 +536,7 @@ function board(o){
   const bx0=lo===0?cols[0].x1:cols[0].x0,bx1=cols[cols.length-1].x1;
   let g=`<rect class="wood" x="${bx0}" y="${T}" width="${bx1-bx0}" height="${RH*6}" rx="3"/>`;
   for(const c of cols){const cx=(c.x0+c.x1)/2;
-    const dia=cy=>`<path class="inlay" d="M${cx-6} ${cy}L${cx} ${cy-8}L${cx+6} ${cy}L${cx} ${cy+8}Z"/>`;
+    const dia=cy=>`<path class="inlay" d="M${cx-7.5} ${cy}L${cx} ${cy-10}L${cx+7.5} ${cy}L${cx} ${cy+10}Z"/>`;
     if([3,5,7,9,15,17,19].includes(c.f))g+=dia(T+RH*3);
     if(c.f===12)g+=dia(T+RH*1.5)+dia(T+RH*4.5);
     if(c.f>=1)g+=`<line class="wire" x1="${c.x1}" y1="${T}" x2="${c.x1}" y2="${T+RH*6}"/>`;
