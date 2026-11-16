@@ -251,16 +251,17 @@ html.pl body.running .btn{font-size:.92rem}
 #tour{position:fixed;inset:0;z-index:60}
 #tourHole{position:fixed;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 200vmax rgba(6,10,9,.72);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
 #tourHole.none{left:50%!important;top:50%!important;width:0!important;height:0!important;border:0}
-#tourCard{position:fixed;left:50%;transform:translateX(-50%);width:min(560px,calc(100vw - 24px));background:var(--raise);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#tourCard{position:fixed;left:12px;right:12px;margin:0 auto;box-sizing:border-box;max-width:560px;max-height:calc(100% - 20px);overflow:auto;grid-template-columns:minmax(0,1fr);background:var(--raise);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
 #tourCard h3{margin:0;font-family:var(--f-d);font-size:1.25rem;font-weight:400}
-#tourCard p{margin:0;line-height:1.45}
-#tourCard .trow{display:flex;align-items:center;gap:8px}
+#tourCard p{margin:0;line-height:1.45;overflow-wrap:anywhere}
+#tourCard .trow{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 8px}
+#tourCard .trow .btn{white-space:nowrap;padding:7px 12px;min-height:38px}
 #tourCard .trow .sp{flex:1}
 #tourCard .tdots{display:flex;gap:5px}
 #tourCard .tdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
 #tourCard .tdots i.on{background:var(--accent)}
 #tourSkip{background:none;border:0;color:var(--muted);text-decoration:underline;padding:8px 4px;font:inherit;font-size:.9rem}
-html.pl #tourCard{padding:9px 14px;gap:4px;width:min(620px,calc(100vw - 24px))}
+html.pl #tourCard{padding:9px 14px;gap:4px;max-width:620px}
 html.pl #tourCard h3{font-size:1.05rem}
 html.pl #tourCard p{font-size:.9rem;line-height:1.35}
 html.pl #tourCard .btn{min-height:34px;padding:4px 14px;font-size:.9rem}
@@ -1158,8 +1159,8 @@ const TOUR=[
 ];
 let tourI=-1;
 function tourPlace(){if(tourI<0)return;const st=TOUR[tourI],hole=$('tourHole'),card=$('tourCard'),el=st.a&&st.a(),vh=window.innerHeight,vw=window.innerWidth;
-  if(!el){hole.className='none';card.style.top='50%';card.style.bottom='auto';card.style.transform='translate(-50%,-50%)';return;}
-  hole.className='';card.style.transform='translateX(-50%)';card.style.top='auto';card.style.bottom='10px';
+  if(!el){hole.className='none';card.style.bottom='auto';card.style.top=Math.max(10,(vh-card.offsetHeight)/2)+'px';return;}
+  hole.className='';card.style.top='auto';card.style.bottom='10px';
   const ch=card.offsetHeight,room=vh-ch-26;
   window.scrollTo(0,Math.max(0,el.getBoundingClientRect().top+window.scrollY-10));
   const r=el.getBoundingClientRect(),top=Math.max(6,r.top-4),bot=Math.min(room,r.bottom+4),l=Math.max(4,r.left-4),rt=Math.min(vw-4,r.right+4);
