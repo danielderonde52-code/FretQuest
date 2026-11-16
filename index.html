@@ -330,7 +330,7 @@ html.pl body.running .btn{font-size:.92rem}
     </section>
 
     <section id="v-stat" hidden>
-      <p class="muted small" style="max-width:65ch">Per oefening kijkt de app naar je laatste 20 antwoorden. Het niveau loopt van verkennen via groeiend en stevig naar vlot. Stevig betekent dat het meestal goed gaat; vlot dat het ook binnen de richttijd lukt. De richttijd is ruim en telt het vinden van de knop mee. Wat stevig zit, komt terug na 1, 3, 7, 14 en 30 dagen.</p>
+      <p class="muted small" style="max-width:65ch">Per oefening kijkt de app naar je laatste 20 antwoorden. Het niveau loopt van verkennen via groeiend en stevig naar vlot. Stevig betekent dat het meestal goed gaat; vlot dat het ook binnen de richttijd lukt. De richttijd is ruim en telt het vinden van de knop mee; het eerste antwoord van een ronde wordt niet geklokt. Wat stevig zit, komt terug na 1, 3, 7, 14 en 30 dagen.</p>
       <div class="tw" id="statTable"></div>
       <div class="row"><button class="btn ghost" id="statReset">Voortgang wissen</button><span id="statConfirm" class="row"></span></div>
     </section>
@@ -430,7 +430,8 @@ function rec(k,ok,ms){const a=store.stats[k]||(store.stats[k]=[]);a.push([ok?1:0
 const LIM={naam:5,vind:4,trap:6,zoek:4.5,bouw:4,herken:9,wissel:5,hoor:8,hvind:10,hspeel:12,gnoot:8,gtrap:9,gloop:2.5,gwissel:2.5,jam:12};   // richttijd in seconden, inclusief het vinden van de knop
 const limOf=k=>(LIM[String(k).split('|')[0]]||6)*1000;
 function score(k){const a=store.stats[k];if(!a||!a.length)return 0;return a.reduce((x,r)=>x+r[0],0)/a.length*Math.min(1,a.length/10);}
-function vlot(k){const a=(store.stats[k]||[]).filter(r=>r[0]);if(!a.length)return 0;const L=limOf(k);return a.filter(r=>r[1]<=L).length/a.length;}
+function vlot(k){const a=(store.stats[k]||[]).filter(r=>r[0]&&r[1]>=0);   // -1 = niet geklokt
+  if(!a.length)return 0;const L=limOf(k);return a.filter(r=>r[1]<=L).length/a.length;}
 const LVL=['Nieuw','Verkennen','Groeiend','Stevig','Vlot'];
 function level(k){const a=store.stats[k];if(!a||!a.length)return 0;const m=score(k);return m>=.85&&vlot(k)>=.6?4:m>=.75?3:m>=.5?2:1;}
 /* Herhaling over dagen: wat stevig zit komt terug na 1, 3, 7, 14 en 30 dagen. Ging het minder, dan komt het gewoon eerder terug. */
@@ -794,11 +795,12 @@ function drawQ(){const q=run.q;let dots=q.dots.slice();
   $('prBoard').innerHTML=board({dots,xs:q.xs,win:q.wins?null:q.win,wins:q.wins,hi:q.hi});}
 function finish(ok,msg){const q=run.q;if(q.done)return;q.done=true;q.okEnd=ok;
   const per=q.type==='play'?Math.max(1,q.seq.length):q.type==='tap'?Math.max(1,q.targets.length):1,ms=(performance.now()-run.t0)/per;
-  run.res.push({ok,ms});rec(run.key,ok,ms);if(q.ek){mark(q.ek,ok);save();}
+  /* het eerste antwoord van een ronde wordt niet geklokt: dan ben je je telefoon nog aan het draaien of je aan het oriënteren */
+  const klok=run.i>0;run.res.push({ok,ms:klok?ms:null});rec(run.key,ok,klok?ms:-1);if(q.ek){mark(q.ek,ok);save();}
   run.i++;meta();drawQ();$('prShow').hidden=true;
   const L=limOf(run.key),sec=(ms/1000).toFixed(1).replace('.',','),unit=per>1||q.type!=='choice'?' per noot':'';
   const fb=$('prFb');fb.className='fb '+(ok?'ok':'no');
-  fb.textContent=(ok?`Goed · ${sec} s${unit}. `:'Niet goed. ')+(msg||q.why||'');fb.title=fb.textContent;
+  fb.textContent=(ok?(klok?`Goed · ${sec} s${unit}. `:'Goed. '):'Niet goed. ')+(msg||q.why||'');fb.title=fb.textContent;
   if(q.play&&!ok){Au.hush();const T=60+mod(run.ear.root);earPlay(.25);if(!q.ref)Au.note(T,.25+q.play.length*.45+.35,.7);}   // fout: nog eens de noot, dan de grondtoon
   if(ok&&ui.auto)run.tm=setTimeout(nextQ,q.play?1100:q.type==='choice'?800:1300);else{$('prNext').hidden=false;$('prNext').textContent=run.i>=run.n?'Afronden':'Volgende';}}
 $('prChoices').addEventListener('click',e=>{const b=e.target.closest('[data-c]'),q=run.q;if(!b||!q||q.done)return;
@@ -834,12 +836,12 @@ $('dNext').onclick=()=>{if(ses)sesGo();};
 $('sesStart').onclick=sesStartNow;
 $('sesGt').onchange=e=>{ui.sesGt=e.target.checked;saveCfg();};
 function stopRun(toSetup,keepMic){clearTimeout(run.tm);clearInterval(run.jt);run.active=false;run.jam=null;Au.stopDrone();Au.hush();if(!keepMic)Mic.stop();$('droneBtn').classList.remove('on');$('droneBtn').textContent='Drone aan';if(toSetup){mode('setup');renderSetup();}}
-function finishRound(){const ok=run.res.filter(r=>r.ok).length,avg=run.res.reduce((a,r)=>a+r.ms,0)/run.res.length/1000,L=limOf(run.key);
+function finishRound(){const ok=run.res.filter(r=>r.ok).length,tm=run.res.filter(r=>r.ms!=null),avg=tm.length?tm.reduce((a,r)=>a+r.ms,0)/tm.length/1000:null,L=limOf(run.key);
   const unit=['tap','play'].includes(run.q.type)?'noot':'antwoord',voor=run.lv0||0;
   review(run.key,ok/run.res.length);
   stopRun(false,true);mode('done');$('dScore').textContent=`${ok} / ${run.res.length}`;
   const r=store.rev[run.key],na=level(run.key);
-  $('dText').textContent=`Gemiddeld ${avg.toFixed(1).replace('.',',')} s per ${unit} (richttijd ${L/1000} s). Niveau: ${LVL[na].toLowerCase()}${na>voor?', een stap omhoog':''}.`+(r?` Komt terug over ${r.due-dayNo()} ${r.due-dayNo()===1?'dag':'dagen'}.`:'');
+  $('dText').textContent=(avg==null?'':`Gemiddeld ${avg.toFixed(1).replace('.',',')} s per ${unit} (richttijd ${L/1000} s), het eerste antwoord niet meegeteld. `)+`Niveau: ${LVL[na].toLowerCase()}${na>voor?', een stap omhoog':''}.`+(r?` Komt terug over ${r.due-dayNo()} ${r.due-dayNo()===1?'dag':'dagen'}.`:'');
   sesAfter(ok,run.res.length);}
 $('dAgain').onclick=()=>startRound();$('dSetup').onclick=()=>{ses=null;Mic.stop();mode('setup');renderSetup();};$('dPad').onclick=()=>show('pad');
 $('prStart').onclick=()=>{Au.ensure();ses=null;startRound();};
@@ -870,7 +872,7 @@ function jamNote(midi,tapped){const j=run.jam,iv=mod(midi-j.c.root),inn=F[j.c.fi
   if(iv===j.target){if(tapped)jamLand();else{const t=performance.now();j.pend={midi,t0:t,seen:t};}}
   $('lvTarget').classList.toggle('hold',!!j.pend);
   jamStat();jamDraw();}
-function jamLand(){const j=run.jam;j.pend=null;j.hits++;rec(run.key,true,performance.now()-j.tt);mark(j.c.fid+j.target,true);$('lvTarget').classList.remove('hold');jamTarget();jamDraw();}
+function jamLand(){const j=run.jam;j.pend=null;j.hits++;rec(run.key,true,j.hits>1?performance.now()-j.tt:-1);mark(j.c.fid+j.target,true);$('lvTarget').classList.remove('hold');jamTarget();jamDraw();}
 /* elke microfoonframe: klinkt het doel nog? Langs het doel lopen (een andere noot of stilte binnen de wachttijd) telt niet. */
 function jamHold(midi,t){const j=run.jam;if(!j||!j.pend)return;
   if(midi===j.pend.midi)j.pend.seen=t;
@@ -1086,8 +1088,8 @@ $('lesBody').addEventListener('click',e=>{const b=e.target.closest('button');if(
 /* ================= voortgang ================= */
 function renderStat(){const t=dayNo();
   const rows=Object.keys(store.stats).map(k=>{const a=store.stats[k],[d,fid,lt]=k.split('|');if(!DR[d])return'';
-    const acc=a.reduce((x,r)=>x+r[0],0)/a.length,ms=a.reduce((x,r)=>x+r[1],0)/a.length,L=limOf(k),r=store.rev[k],lv=level(k);
-    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+(DR[d].nolens||DR[d].fixlens?'':' · '+LENS[lt].toLowerCase()):'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n">${(ms/1000).toFixed(1).replace('.',',')} s</td><td class="n">${L/1000} s</td><td>${LVL[lv]}</td><td class="n">${r?(r.due<=t?'vandaag':'over '+(r.due-t)+' d'):'–'}</td></tr>`;}).join('');
+    const acc=a.reduce((x,r)=>x+r[0],0)/a.length,tm=a.filter(x=>x[1]>=0),ms=tm.length?tm.reduce((x,r)=>x+r[1],0)/tm.length:null,L=limOf(k),r=store.rev[k],lv=level(k);
+    return`<tr><td>${DR[d].n}</td><td>${fid&&F[fid]?esc(F[fid].n)+(DR[d].nolens||DR[d].fixlens?'':' · '+LENS[lt].toLowerCase()):'–'}</td><td class="n">${a.length}</td><td class="n">${Math.round(acc*100)}%</td><td class="n">${ms==null?'–':(ms/1000).toFixed(1).replace('.',',')+' s'}</td><td class="n">${L/1000} s</td><td>${LVL[lv]}</td><td class="n">${r?(r.due<=t?'vandaag':'over '+(r.due-t)+' d'):'–'}</td></tr>`;}).join('');
   $('statTable').innerHTML=rows?`<table><thead><tr><th>Oefening</th><th>Materiaal</th><th>Antwoorden</th><th>Goed</th><th>Tijd</th><th>Richttijd</th><th>Niveau</th><th>Komt terug</th></tr></thead><tbody>${rows}</tbody></table>`
     :'<p class="muted">Nog niets geoefend. Kies een oefening in het leerpad; je resultaten verschijnen hier.</p>';
   $('statConfirm').innerHTML='';}
